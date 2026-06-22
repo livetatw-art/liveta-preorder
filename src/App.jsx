@@ -191,6 +191,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
   useEffect(() => { if (giftQty === 0) setGiftCart({}); }, [giftQty]);
 
   async function handleSubmit() {
+    try {
     if (!form.name.trim()) return setError("請填寫姓名");
     if (!form.phone.trim()) return setError("請填寫電話");
     if (pickupLocations && pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
@@ -245,6 +246,10 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     const body = encodeURIComponent(`訂單編號：${ref}\n姓名：${form.name}\n電話：${form.phone}\n取貨地點：${form.pickupLocation || "未填"}\n取貨時間：${form.pickupTime}\n付款方式：${payLabel(form.payment)}${form.atmLast5 ? `（末5碼：${form.atmLast5}）` : ""}\n\n商品：${itemList}\n贈品：${giftList}\n合計：NT$ ${total}\n\n備註：${form.note || "無"}`);
     window.location.href = `mailto:livetatw@gmail.com?subject=${subject}&body=${body}`;
     setSubmitted(true);
+    } catch(err) {
+      console.error("送出錯誤:", err);
+      setError("送出失敗：" + err.message);
+    }
   }
 
   if (!noticeSeen && noticeText) {
