@@ -1,13 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
-const LOGO_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAphUlEQVR42u2d93dkx3XnPxXeex0RBoPJgRxmmVTy8VrySvbqrNf28Z7d/Xv3WCvLshVIK1EkFUgOOeRkYJA7vVBV+0PVe909nBkGTWgA9eXBAUkAjcar+tYNde/3CuecIyIi4oGQ8RFERESCREREgkRERIJERESCREREgkRERIJERESCREREgkRERIJEREREgkRERIJERESCREREgkRERIJERESCREREgkRERIJERESCREREgkRERESCREREgkRERIJERESCREREgkRERIJERESCREREgkRERIJEREREgkRERIJERESCREREgkRERIJERESCREQcHuj4CJ4xHjYiUojma/V3iNmvRTwViDjE8+mRwH2GA+LPe81IlEiQw0YEN7N5P5cAzmHGE6o8RyqFkNL/nJQIJZls7TC+fReRJqTLfXS77T+6nZmXcN6yRLJEgiweHxzUB/lDNqgtS0xRYoqCKs/J9/YpBwNcVZFvbpMPh1hjPCnCawgpsNaSD0dopZBaIYREpylSadqn11l56Qrtk2vzvzdalUiQhSDFA9wjW5bk+wdMdncZ7+yQ7+1TDAZUozGmLLFVhTUGZ4z3tQSeFMFqMOuEhU9CSkAgpURIgRASKSVJkiKlorV2guzECq3VFTpnTyOTJBIlEmQxSGHLitHWFoPbdxhubDDZ3qEYjbBlOXWxAgGEEH7DChHcoRkuuAdEJ/XvmVuawCrnkEqjtEY4hxACJRXttTVOfO0VuufPgRSRKJEgT4cYs6SoJjmD27fZvfYpw7t3yQ8OcFUFUjYxREOGOh75zEZ/vO9NSG9VhAOJoH/xAidefYn22hoyS2OcEgnyZALtmhjOOQa3brP94VX2b9ykGAz8Ka41Qin/fbPB+bN6zwIEAmcsSinay8usvvgCa6+/hlDqke5hRCTIF9hk4JhajGo8YfvqVbb/9AGjrS2ctUitkfVme5aEeOSKBsJai7CO7unT9M+eoXvmNP1LFx5qHSMiQb6QK1UMhmy+93u2P/iQ4mCAUAqZaB82HKZHFf4eW1W4yqDShLWXX2b1hefpnj0zZyEjUSJBPpcY5WjExjvvsvWnDyiHQ2SSILUOqdxD/IiE8EbFOkxRkrZa9E6dYuXlF1l+/vLUIsY4JRLkQeSwxrD5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";
+const LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAphUlEQVR42u2d93dkx3XnPxXeex0RBoPJgRxmmVTy8VrySvbqrNf28Z7d/Xv3WCvLshVIK1EkFUgOOeRkYJA7vVBV+0PVe909nBkGTWgA9eXBAUkAjcar+tYNde/3CuecIyIi4oGQ8RFERESCREREgkRERIJERESCREREgkRERIJERESCREREgkRERIJEREREgkRERIJERESCREREgkRERIJERESCREREgkRERIJERESCREREgkRERESCREREgkRERIJERESCREREgkRERIJERESCREREgkRERIJEREREgkRERIJERESCREREgkRERIJERESCREQcHuj4CJ4xHjYiUojma/V3iNmvRTwViDjE8+mRwH2GA+LPe81IlEiQw0YEN7N5P5cAzmHGE6o8RyqFkNL/nJQIJZls7TC+fReRJqTLfXS77T+6nZmXcN6yRLJEgiweHxzUB/lDNqgtS0xRYoqCKs/J9/YpBwNcVZFvbpMPh1hjPCnCawgpsNaSD0dopZBaIYREpylSadqn11l56Qrtk2vzvzdalUiQhSDFA9wjW5bk+wdMdncZ7+yQ7+1TDAZUozGmLLFVhTUGZ4z3tQSeFMFqMOuEhU9CSkAgpURIgRASKSVJkiKlorV2guzECq3VFTpnTyOTJBIlEmQxSGHLitHWFoPbdxhubDDZ3qEYjbBlOXWxAgGEEH7DChHcoRkuuAdEJ/XvmVuawCrnkEqjtEY4hxACJRXttTVOfO0VuufPgRSRKJEgT4cYs6SoJjmD27fZvfYpw7t3yQ8OcFUFUjYxREOGOh75zEZ/vO9NSG9VhAOJoH/xAidefYn22hoyS2OcEgnyZALtmhjOOQa3brP94VX2b9ykGAz8Ka41Qin/fbPB+bN6zwIEAmcsSinay8usvvgCa6+/hlDqke5hRCTIF9hk4JhajGo8YfvqVbb/9AGjrS2ctUitkfVme5aEeOSKBsJai7CO7unT9M+eoXvmNP1LFx5qHSMiQb6QK1UMhmy+93u2P/iQ4mCAUAqZaB82HKZHFf4eW1W4yqDShLWXX2b1hefpnj0zZyEjUSJBPpcY5WjExjvvsvWnDyiHQ2SSILUOqdxD/IiE8EbFOkxRkrZa9E6dYuXlF1l+/vLUIsY4JRLkQeSwxrD5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";
 const ADMIN_PASSWORD = "liveta2024";
-const SHEETS_API = "https://script.google.com/macros/s/AKfycbxvJNW7pSz1Fx9EwkqigqJP40y7Yl4NEtsfJhWQgUYTsmrVXxH1xW0rYswTqO9y7jhsyQ/exec";
 const LINE_PAY_URL = "https://line.me/R/pay/payment?action=reserve&encPath=3LalDOBtaG%252BfOQPfnbqO83EJUw%252F%252BT4kr9hdSAskChhhQDjw5UaaVT6XpZr7o6S0F&merchantProvider=LINEPAY#~";
 const ATM_INFO = { bank: "中國信託（822）", account: "901561833284" };
-
-const initialProducts = [];
-const initialGifts = [];
+const API = "https://script.google.com/macros/s/AKfycbxvJNW7pSz1Fx9EwkqigqJP40y7Yl4NEtsfJhWQgUYTsmrVXxH1xW0rYswTqO9y7jhsyQ/exec";
 
 const PAYMENT_OPTIONS = [
   { value: "cash_on_pickup", label: "當天取貨付款", icon: "💵", desc: "現金或 LINE Pay 當場付款" },
@@ -21,12 +18,6 @@ const C = {
   green: "#4a7c5e", greenPale: "#e8f2ec", red: "#8b2e2e", redPale: "#f9eaea",
   amber: "#8a6200", amberPale: "#fff8e1",
 };
-
-function useStorage(key, def) {
-  const [v, setV] = useState(() => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : def; } catch { return def; } });
-  useEffect(() => { localStorage.setItem(key, JSON.stringify(v)); }, [key, v]);
-  return [v, setV];
-}
 
 const S = {
   page: { minHeight: "100vh", background: C.cream, fontFamily: "'Georgia','Times New Roman',serif", color: C.ink },
@@ -44,6 +35,17 @@ const S = {
 
 const payLabel = (p) => p === "line_pay" ? "LINE Pay（預付）" : p === "atm" ? "ATM 轉帳" : "當天取貨付款";
 
+// ── API helpers ────────────────────────────────────────────
+async function apiGet(action) {
+  const res = await fetch(`${API}?action=${action}`);
+  return res.json();
+}
+
+async function apiPost(body) {
+  await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
+}
+
+// ── Header ─────────────────────────────────────────────────
 function Header() {
   return (
     <>
@@ -61,6 +63,7 @@ function Header() {
   );
 }
 
+// ── ProductCard ─────────────────────────────────────────────
 function ProductCard({ product, qty, onChange }) {
   const soldOut = product.stock <= 0;
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
@@ -91,6 +94,7 @@ function ProductCard({ product, qty, onChange }) {
   );
 }
 
+// ── GiftSection ─────────────────────────────────────────────
 function GiftSection({ gifts, giftQty, giftCart, onChangeGift }) {
   if (giftQty === 0 || gifts.length === 0) return null;
   const availableGifts = gifts.filter(g => g.stock > 0);
@@ -134,17 +138,18 @@ function GiftSection({ gifts, giftQty, giftCart, onChangeGift }) {
   );
 }
 
-function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote, pickupSlots, pickupLocations, onSubmit }) {
+// ── OrderPage ───────────────────────────────────────────────
+function OrderPage({ products, gifts, settings, onSubmit }) {
+  const { isOpen, openInfo, noticeText, successNote, pickupSlots, pickupLocations } = settings;
   const [cart, setCart] = useState({});
   const [giftCart, setGiftCart] = useState({});
   const [form, setForm] = useState({ name: "", phone: "", pickupLocation: "", pickupTime: "", payment: "", note: "", proofFile: null, atmLast5: "" });
   const [submitted, setSubmitted] = useState(false);
   const [orderRef, setOrderRef] = useState("");
   const [error, setError] = useState("");
-  const fileRef = useRef();
   const [noticeSeen, setNoticeSeen] = useState(false);
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
-  const noticeScrollRef = useRef();
+  const fileRef = useRef();
 
   const desserts = products.filter(p => !p.type || p.type === "dessert");
   const drinks = products.filter(p => p.type === "drink");
@@ -159,7 +164,7 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
   async function handleSubmit() {
     if (!form.name.trim()) return setError("請填寫姓名");
     if (!form.phone.trim()) return setError("請填寫電話");
-    if (pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
+    if (pickupLocations && pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
     if (!form.pickupTime) return setError("請選擇取貨時間");
     if (!form.payment) return setError("請選擇付款方式");
     if (form.payment === "line_pay" && !form.proofFile) return setError("請上傳 LINE Pay 付款截圖");
@@ -177,39 +182,29 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
     }
     const ref = "LV" + Date.now().toString().slice(-6);
     setOrderRef(ref);
-    onSubmit({ name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref, createdAt: new Date().toISOString(), status: "待確認" });
+    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
+    await apiPost(orderData);
+    onSubmit(orderData);
     const itemList = items.map(i => `${i.name} x${i.qty}`).join(", ");
     const giftList = giftItems.length > 0 ? giftItems.map(g => `${g.name} x${g.qty}`).join(", ") : "無";
-    const payText = payLabel(form.payment);
     const subject = encodeURIComponent(`【莉薇塔新訂單】${ref} - ${form.name}`);
-    const body = encodeURIComponent(`訂單編號：${ref}\n姓名：${form.name}\n電話：${form.phone}\n取貨地點：${form.pickupLocation || "未填"}\n取貨時間：${form.pickupTime}\n付款方式：${payText}${form.atmLast5 ? `（末5碼：${form.atmLast5}）` : ""}\n\n商品：${itemList}\n贈品：${giftList}\n合計：NT$ ${total}\n\n備註：${form.note || "無"}`);
-    // 寫入 Google 試算表
-    try {
-      fetch(SHEETS_API, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, atmLast5: form.atmLast5, items, gifts: giftItems, total, ref, note: form.note })
-      });
-    } catch(err) { console.log("試算表寫入失敗", err); }
-    // Email 通知
+    const body = encodeURIComponent(`訂單編號：${ref}\n姓名：${form.name}\n電話：${form.phone}\n取貨地點：${form.pickupLocation || "未填"}\n取貨時間：${form.pickupTime}\n付款方式：${payLabel(form.payment)}${form.atmLast5 ? `（末5碼：${form.atmLast5}）` : ""}\n\n商品：${itemList}\n贈品：${giftList}\n合計：NT$ ${total}\n\n備註：${form.note || "無"}`);
     window.location.href = `mailto:livetatw@gmail.com?subject=${subject}&body=${body}`;
     setSubmitted(true);
   }
 
   if (!noticeSeen && noticeText) {
     return (
-      <div style={S.page}>
-        <Header />
+      <div style={S.page}><Header />
         <div style={{ maxWidth: "520px", margin: "0 auto", padding: "24px 16px" }}>
           <div style={{ ...S.card, padding: "0", overflow: "hidden" }}>
             <div style={{ background: C.rose, padding: "16px 20px" }}>
               <div style={{ color: C.white, fontSize: "11px", fontFamily: "sans-serif", letterSpacing: "0.15em", marginBottom: "4px" }}>NOTICE</div>
               <div style={{ color: C.white, fontSize: "18px" }}>訂購須知</div>
             </div>
-            <div ref={noticeScrollRef} onScroll={e => { const el = e.target; if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) setScrolledToBottom(true); }}
+            <div onScroll={e => { const el = e.target; if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) setScrolledToBottom(true); }}
               style={{ height: "360px", overflowY: "auto", padding: "20px", whiteSpace: "pre-line", fontFamily: "sans-serif", fontSize: "14px", lineHeight: "2", color: C.ink }}>
-              {noticeText}
-              <div style={{ height: "20px" }} />
+              {noticeText}<div style={{ height: "20px" }} />
             </div>
             <div style={{ padding: "16px 20px", borderTop: `1px solid ${C.border}`, background: C.cream }}>
               {!scrolledToBottom && <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, textAlign: "center", marginBottom: "10px" }}>↓ 請滑到底部閱讀完畢</div>}
@@ -301,9 +296,7 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
           {drinks.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} />)}
         </>}
         {desserts.length === 0 && drinks.length === 0 && (
-          <div style={{ ...S.card, textAlign: "center", padding: "40px", color: C.muted, fontFamily: "sans-serif" }}>
-            本週品項尚未設定，請稍後再來 🌸
-          </div>
+          <div style={{ ...S.card, textAlign: "center", padding: "40px", color: C.muted, fontFamily: "sans-serif" }}>本週品項尚未設定，請稍後再來 🌸</div>
         )}
         {hasItems && (
           <div style={{ ...S.card, background: C.rosePale, border: `1px solid ${C.roseMid}` }}>
@@ -325,7 +318,7 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
             <input style={S.input} placeholder={f.placeholder} value={form[f.key]} onChange={e => setForm(v => ({ ...v, [f.key]: e.target.value }))} />
           </div>
         ))}
-        {pickupLocations.length > 0 && (
+        {pickupLocations && pickupLocations.length > 0 && (
           <div style={{ marginBottom: "14px" }}>
             <label style={S.label}>取貨地點</label>
             <select style={S.select} value={form.pickupLocation} onChange={e => setForm(v => ({ ...v, pickupLocation: e.target.value }))}>
@@ -338,7 +331,7 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
           <label style={S.label}>取貨時間</label>
           <select style={S.select} value={form.pickupTime} onChange={e => setForm(v => ({ ...v, pickupTime: e.target.value }))}>
             <option value="">請選擇時段</option>
-            {pickupSlots.map(s => <option key={s} value={s}>{s}</option>)}
+            {pickupSlots && pickupSlots.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div style={{ marginBottom: "14px" }}>
@@ -360,9 +353,7 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
             <div style={{ marginTop: "10px", padding: "14px", background: "#f0faf0", border: "1px solid #a8dab0", borderRadius: "6px" }}>
               <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.green, marginBottom: "8px" }}>✦ 上傳付款截圖</div>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => setForm(v => ({ ...v, proofFile: e.target.files[0] }))} />
-              <button onClick={() => fileRef.current.click()} style={{ ...S.btnOutline, borderColor: C.green, color: C.green }}>
-                {form.proofFile ? `✓ ${form.proofFile.name}` : "選擇截圖"}
-              </button>
+              <button onClick={() => fileRef.current.click()} style={{ ...S.btnOutline, borderColor: C.green, color: C.green }}>{form.proofFile ? `✓ ${form.proofFile.name}` : "選擇截圖"}</button>
               <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, marginTop: "6px" }}>付款完成後請上傳截圖以利核對</div>
             </div>
           )}
@@ -389,59 +380,9 @@ function OrderPage({ products, gifts, isOpen, openInfo, noticeText, successNote,
   );
 }
 
-function SummaryTab({ orders, gifts }) {
-  const active = orders.filter(o => o.status !== "已取消");
-  const itemTotals = {};
-  active.forEach(o => o.items.forEach(i => { if (!itemTotals[i.name]) itemTotals[i.name] = { qty: 0, type: i.type }; itemTotals[i.name].qty += i.qty; }));
-  const giftTotals = {};
-  active.forEach(o => { if (o.gifts) o.gifts.forEach(g => { giftTotals[g.name] = (giftTotals[g.name] || 0) + g.qty; }); });
-  const payTotals = { cash_on_pickup: 0, line_pay: 0, atm: 0 };
-  const payCounts = { cash_on_pickup: 0, line_pay: 0, atm: 0 };
-  active.forEach(o => { payTotals[o.payment] = (payTotals[o.payment] || 0) + o.total; payCounts[o.payment] = (payCounts[o.payment] || 0) + 1; });
-  const grand = active.reduce((s, o) => s + o.total, 0);
-  const row = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontFamily: "sans-serif" };
-  const num = { fontSize: "18px", fontWeight: "600", color: C.rose, minWidth: "40px", textAlign: "right" };
-  const dessertItems = Object.entries(itemTotals).filter(([, v]) => !v.type || v.type === "dessert");
-  const drinkItems = Object.entries(itemTotals).filter(([, v]) => v.type === "drink");
-  return (
-    <div>
-      <div style={{ ...S.card, background: C.rosePale, border: `1px solid ${C.roseMid}` }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <div style={{ fontFamily: "sans-serif" }}>
-            <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em" }}>有效訂單</div>
-            <div style={{ fontSize: "28px", color: C.rose, fontWeight: "600" }}>{active.length} <span style={{ fontSize: "14px", color: C.muted }}>筆</span></div>
-          </div>
-          <div style={{ fontFamily: "sans-serif", textAlign: "right" }}>
-            <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.1em" }}>總營業額</div>
-            <div style={{ fontSize: "24px", color: C.rose, fontWeight: "600" }}>NT$ {grand.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-      {dessertItems.length > 0 && <div style={S.card}><div style={{ fontSize: "15px", marginBottom: "12px" }}>🍰 甜點訂購量</div>{dessertItems.map(([n, v]) => <div key={n} style={row}><span style={{ fontSize: "14px" }}>{n}</span><span style={num}>{v.qty}</span></div>)}</div>}
-      {drinkItems.length > 0 && <div style={S.card}><div style={{ fontSize: "15px", marginBottom: "12px" }}>🧋 飲品訂購量</div>{drinkItems.map(([n, v]) => <div key={n} style={row}><span style={{ fontSize: "14px" }}>{n}</span><span style={num}>{v.qty}</span></div>)}</div>}
-      {Object.keys(giftTotals).length > 0 && <div style={S.card}><div style={{ fontSize: "15px", marginBottom: "12px" }}>🎁 贈品出貨量</div>{Object.entries(giftTotals).map(([n, q]) => <div key={n} style={row}><span style={{ fontSize: "14px" }}>{n}</span><span style={{ ...num, color: C.amber }}>{q}</span></div>)}</div>}
-      <div style={S.card}>
-        <div style={{ fontSize: "15px", marginBottom: "12px" }}>💳 付款方式統計</div>
-        {[["cash_on_pickup", "💵 當天取貨付款"], ["line_pay", "💚 LINE Pay"], ["atm", "🏦 ATM 轉帳"]].map(([k, lbl]) => payCounts[k] > 0 && (
-          <div key={k} style={{ ...row, flexWrap: "wrap", gap: "4px" }}>
-            <span style={{ fontSize: "13px" }}>{lbl}</span>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <span style={{ fontSize: "13px", color: C.muted }}>{payCounts[k]} 筆</span>
-              <span style={{ fontSize: "14px", color: C.rose, fontWeight: "600" }}>NT$ {payTotals[k].toLocaleString()}</span>
-            </div>
-          </div>
-        ))}
-        <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "12px", fontFamily: "sans-serif" }}>
-          <span style={{ fontSize: "13px", fontWeight: "600" }}>合計</span>
-          <span style={{ fontSize: "16px", fontWeight: "600", color: C.rose }}>NT$ {grand.toLocaleString()}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders, isOpen, setIsOpen, openInfo, setOpenInfo, noticeText, setNoticeText, successNote, setSuccessNote, pickupSlots, setPickupSlots, pickupLocations, setPickupLocations }) {
-  const [tab, setTab] = useState("summary");
+// ── AdminPanel ──────────────────────────────────────────────
+function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders, settings, setSettings, onSaveProducts, onSaveGifts, onSaveSettings }) {
+  const [tab, setTab] = useState("orders");
   const [editProduct, setEditProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({ name: "", price: "", originalPrice: "", stock: "", unit: "個", type: "dessert" });
   const [showNewProd, setShowNewProd] = useState(false);
@@ -450,32 +391,34 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
   const [showNewGift, setShowNewGift] = useState(false);
   const [newSlot, setNewSlot] = useState("");
   const [newLocation, setNewLocation] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const { isOpen, openInfo, noticeText, successNote, pickupSlots, pickupLocations } = settings;
 
   const statusColors = { "待確認": { c: "#7a5c00", bg: "#fff8e1" }, "已確認": { c: C.green, bg: C.greenPale }, "已取消": { c: C.red, bg: C.redPale }, "已完成": { c: C.muted, bg: C.border } };
   const tabStyle = (a) => ({ padding: "10px 12px", border: "none", borderBottom: `2px solid ${a ? C.rose : "transparent"}`, background: "transparent", color: a ? C.rose : C.muted, fontFamily: "sans-serif", fontSize: "12px", cursor: "pointer", whiteSpace: "nowrap" });
 
+  async function save(fn) { setSaving(true); await fn(); setSaving(false); }
+
   function exportCSV() {
-    const rows = [["訂單編號", "姓名", "電話", "取貨地點", "取貨時間", "付款方式", "ATM末5碼", "截圖", "甜點", "飲品", "贈品", "總金額", "狀態", "時間", "備註"]];
+    const rows = [["訂單編號","姓名","電話","取貨地點","取貨時間","付款方式","ATM末5碼","商品","贈品","總金額","狀態","時間","備註"]];
     orders.forEach(o => {
-      const dess = o.items.filter(i => !i.type || i.type === "dessert").map(i => `${i.name}×${i.qty}`).join("、");
-      const drks = o.items.filter(i => i.type === "drink").map(i => `${i.name}×${i.qty}`).join("、");
-      rows.push([o.ref, o.name, o.phone, o.pickupLocation || "", o.pickupTime, payLabel(o.payment), o.atmLast5 || "", o.proofImage ? "已上傳" : "", dess, drks, o.gifts ? o.gifts.map(g => `${g.name}×${g.qty}`).join("、") : "", o.total, o.status, o.createdAt.slice(0, 16).replace("T", " "), o.note || ""]);
+      const dess = (o.items||[]).filter(i => !i.type||i.type==="dessert").map(i=>`${i.name}×${i.qty}`).join("、");
+      const drks = (o.items||[]).filter(i=>i.type==="drink").map(i=>`${i.name}×${i.qty}`).join("、");
+      rows.push([o.ref,o.name,o.phone,o.pickupLocation||"",o.pickupTime,payLabel(o.payment),o.atmLast5||"",dess,drks,(o.gifts||[]).map(g=>`${g.name}×${g.qty}`).join("、"),o.total,o.status,o.createdAt||"",o.note||""]);
     });
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const csv = rows.map(r=>r.map(c=>`"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `莉薇塔訂單_${new Date().toLocaleDateString("zh-TW")}.csv`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement("a"); a.href=url; a.download=`莉薇塔訂單_${new Date().toLocaleDateString("zh-TW")}.csv`; a.click(); URL.revokeObjectURL(url);
   }
 
   const typeToggle = (obj, setObj) => (
     <div style={{ marginBottom: "12px" }}>
       <label style={S.label}>類型</label>
       <div style={{ display: "flex", gap: "8px" }}>
-        {[["dessert", "🍰 甜點"], ["drink", "🧋 飲品"]].map(([val, lbl]) => (
-          <button key={val} onClick={() => setObj(v => ({ ...v, type: val }))}
-            style={{ flex: 1, padding: "8px", border: `1px solid ${obj.type === val ? C.rose : C.border}`, borderRadius: "4px", background: obj.type === val ? C.rosePale : "transparent", fontFamily: "sans-serif", fontSize: "13px", cursor: "pointer", color: obj.type === val ? C.rose : C.muted }}>
-            {lbl}
-          </button>
+        {[["dessert","🍰 甜點"],["drink","🧋 飲品"]].map(([val,lbl]) => (
+          <button key={val} onClick={() => setObj(v=>({...v,type:val}))} style={{ flex:1, padding:"8px", border:`1px solid ${obj.type===val?C.rose:C.border}`, borderRadius:"4px", background:obj.type===val?C.rosePale:"transparent", fontFamily:"sans-serif", fontSize:"13px", cursor:"pointer", color:obj.type===val?C.rose:C.muted }}>{lbl}</button>
         ))}
       </div>
     </div>
@@ -489,20 +432,20 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
           <p style={{ color: C.muted, fontSize: "10px", letterSpacing: "0.2em", marginTop: "2px", fontFamily: "sans-serif" }}>ADMIN PANEL</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {saving && <span style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted }}>儲存中…</span>}
           <span style={{ fontFamily: "sans-serif", fontSize: "12px", color: isOpen ? "#a8d8a8" : C.muted }}>{isOpen ? "🟢 開單中" : "🔴 未開單"}</span>
-          <button onClick={() => setIsOpen(v => !v)} style={{ background: isOpen ? C.red : C.green, color: C.white, border: "none", borderRadius: "4px", padding: "8px 14px", fontFamily: "sans-serif", fontSize: "12px", cursor: "pointer" }}>
+          <button onClick={() => save(() => onSaveSettings({ ...settings, isOpen: !isOpen }))}
+            style={{ background: isOpen ? C.red : C.green, color: C.white, border: "none", borderRadius: "4px", padding: "8px 14px", fontFamily: "sans-serif", fontSize: "12px", cursor: "pointer" }}>
             {isOpen ? "關閉訂單" : "開放訂單"}
           </button>
         </div>
       </header>
       <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, display: "flex", paddingLeft: "8px", overflowX: "auto" }}>
-        {[["summary", "📊 總覽"], ["orders", "📋 訂單"], ["products", "🍰 品項"], ["gifts", "🎁 贈品"], ["settings", "⚙️ 設定"]].map(([key, label]) => (
-          <button key={key} style={tabStyle(tab === key)} onClick={() => setTab(key)}>{label}</button>
+        {[["orders","📋 訂單"],["products","🍰 品項"],["gifts","🎁 贈品"],["settings","⚙️ 設定"]].map(([key,label]) => (
+          <button key={key} style={tabStyle(tab===key)} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
       <div style={{ maxWidth: "760px", margin: "0 auto", padding: "20px 16px" }}>
-
-        {tab === "summary" && <SummaryTab orders={orders} gifts={gifts} />}
 
         {tab === "orders" && (
           <>
@@ -511,14 +454,14 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <button style={{ ...S.btnOutline, borderColor: C.rose, color: C.rose }} onClick={exportCSV}>匯出 CSV</button>
             </div>
             {orders.length === 0 && <div style={{ ...S.card, textAlign: "center", padding: "40px", color: C.muted, fontFamily: "sans-serif" }}>尚無訂單</div>}
-            {[...orders].reverse().map(o => (
-              <div key={o.ref} style={S.card}>
+            {[...orders].reverse().map((o, oi) => (
+              <div key={o.ref || oi} style={S.card}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                   <div>
-                    <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted }}>{o.ref} · {o.createdAt.slice(0, 16).replace("T", " ")}</div>
+                    <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted }}>{o.ref} · {o.createdAt || ""}</div>
                     <div style={{ fontSize: "16px", fontWeight: "500" }}>{o.name} <span style={{ fontSize: "13px", color: C.muted, fontFamily: "sans-serif" }}>{o.phone}</span></div>
                   </div>
-                  <span style={S.tag(statusColors[o.status]?.c || C.muted, statusColors[o.status]?.bg || C.border)}>{o.status}</span>
+                  <span style={S.tag(statusColors[o.status]?.c||C.muted, statusColors[o.status]?.bg||C.border)}>{o.status||"待確認"}</span>
                 </div>
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "8px", lineHeight: "1.8" }}>
                   {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}⏰ {o.pickupTime}　💳 {payLabel(o.payment)}
@@ -532,18 +475,19 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   </div>
                 )}
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", marginBottom: "4px" }}>
-                  {o.items.map(i => <span key={i.productId} style={{ marginRight: "10px" }}>{i.name} ×{i.qty}</span>)}
+                  {(o.items||[]).map(i => <span key={i.productId} style={{ marginRight: "10px" }}>{i.name} ×{i.qty}</span>)}
                 </div>
-                {o.gifts && o.gifts.length > 0 && <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.amber, marginBottom: "4px" }}>🎁 {o.gifts.map(g => `${g.name} × ${g.qty}`).join("、")}</div>}
+                {o.gifts && o.gifts.length > 0 && <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.amber, marginBottom: "4px" }}>🎁 {o.gifts.map(g=>`${g.name} × ${g.qty}`).join("、")}</div>}
                 {o.note && <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "8px" }}>備註：{o.note}</div>}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
                   <span style={{ color: C.rose, fontFamily: "sans-serif" }}>NT$ {o.total}</span>
                   <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                    {["待確認", "已確認", "已完成", "已取消"].map(s => (
-                      <button key={s} onClick={() => setOrders(os => os.map(x => x.ref === o.ref ? { ...x, status: s } : x))}
-                        style={{ padding: "4px 8px", border: `1px solid ${o.status === s ? C.rose : C.border}`, borderRadius: "3px", background: o.status === s ? C.rosePale : "transparent", color: o.status === s ? C.rose : C.muted, fontFamily: "sans-serif", fontSize: "11px", cursor: "pointer" }}>
-                        {s}
-                      </button>
+                    {["待確認","已確認","已完成","已取消"].map(s => (
+                      <button key={s} onClick={async () => {
+                        const newOrders = orders.map(x => x.ref===o.ref ? {...x,status:s} : x);
+                        setOrders(newOrders);
+                        await apiPost({ action: "updateOrderStatus", ref: o.ref, status: s });
+                      }} style={{ padding:"4px 8px", border:`1px solid ${o.status===s?C.rose:C.border}`, borderRadius:"3px", background:o.status===s?C.rosePale:"transparent", color:o.status===s?C.rose:C.muted, fontFamily:"sans-serif", fontSize:"11px", cursor:"pointer" }}>{s}</button>
                     ))}
                   </div>
                 </div>
@@ -558,22 +502,22 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
                   <div>
-                    {[["name", "品項名稱", "text"], ["price", "售價", "number"], ["originalPrice", "原價（選填，填了才顯示劃線原價）", "number"], ["stock", "庫存數量", "number"], ["unit", "單位", "text"]].map(([k, label, type]) => (
+                    {[["name","品項名稱","text"],["price","售價","number"],["originalPrice","原價（選填，填了才顯示劃線原價）","number"],["stock","庫存數量","number"],["unit","單位","text"]].map(([k,label,type]) => (
                       <div key={k} style={{ marginBottom: "10px" }}>
                         <label style={S.label}>{label}</label>
-                        <input type={type} style={S.input} value={editProduct[k] ?? ""} onChange={e => setEditProduct(v => ({ ...v, [k]: (k === "price" || k === "stock" || k === "originalPrice") ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value }))} />
+                        <input type={type} style={S.input} value={editProduct[k]??""} onChange={e => setEditProduct(v=>({...v,[k]:(k==="price"||k==="stock"||k==="originalPrice")?(e.target.value===""?null:Number(e.target.value)):e.target.value}))} />
                       </div>
                     ))}
                     {typeToggle(editProduct, setEditProduct)}
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => { setProducts(ps => ps.map(x => x.id === editProduct.id ? editProduct : x)); setEditProduct(null); }}>儲存</button>
+                      <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => save(async () => { const newProds = products.map(x=>x.id===editProduct.id?editProduct:x); setProducts(newProds); await onSaveProducts(newProds); setEditProduct(null); })}>儲存</button>
                       <button style={S.btnOutline} onClick={() => setEditProduct(null)}>取消</button>
                     </div>
                   </div>
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type === "drink" ? "🧋 飲品" : "🍰 甜點"}</div>
+                      <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type==="drink"?"🧋 飲品":"🍰 甜點"}</div>
                       <div style={{ fontSize: "15px", marginBottom: "2px" }}>{p.name}</div>
                       <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>
                         <span style={{ color: C.rose }}>NT$ {p.price}</span>
@@ -582,8 +526,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
-                      <button style={S.btnOutline} onClick={() => setEditProduct({ ...p })}>編輯</button>
-                      <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red }} onClick={() => setProducts(ps => ps.filter(x => x.id !== p.id))}>刪除</button>
+                      <button style={S.btnOutline} onClick={() => setEditProduct({...p})}>編輯</button>
+                      <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red }} onClick={() => save(async () => { const newProds = products.filter(x=>x.id!==p.id); setProducts(newProds); await onSaveProducts(newProds); })}>刪除</button>
                     </div>
                   </div>
                 )}
@@ -592,18 +536,21 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
             {showNewProd ? (
               <div style={S.card}>
                 <div style={{ fontSize: "14px", marginBottom: "14px", color: C.muted, fontFamily: "sans-serif" }}>新增品項</div>
-                {[["name", "品項名稱", "text"], ["price", "售價", "number"], ["originalPrice", "原價（選填，填了才顯示劃線原價）", "number"], ["stock", "庫存數量", "number"], ["unit", "單位", "text"]].map(([k, label, type]) => (
+                {[["name","品項名稱","text"],["price","售價","number"],["originalPrice","原價（選填）","number"],["stock","庫存數量","number"],["unit","單位","text"]].map(([k,label,type]) => (
                   <div key={k} style={{ marginBottom: "10px" }}>
                     <label style={S.label}>{label}</label>
-                    <input type={type} style={S.input} value={newProduct[k] ?? ""} onChange={e => setNewProduct(v => ({ ...v, [k]: e.target.value }))} />
+                    <input type={type} style={S.input} value={newProduct[k]??""} onChange={e => setNewProduct(v=>({...v,[k]:e.target.value}))} />
                   </div>
                 ))}
                 {typeToggle(newProduct, setNewProduct)}
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => {
-                    if (!newProduct.name || !newProduct.price || !newProduct.stock) return;
-                    setProducts(ps => [...ps, { ...newProduct, id: Date.now(), price: Number(newProduct.price), originalPrice: newProduct.originalPrice ? Number(newProduct.originalPrice) : null, stock: Number(newProduct.stock) }]);
-                    setNewProduct({ name: "", price: "", originalPrice: "", stock: "", unit: "個", type: "dessert" }); setShowNewProd(false);
+                    if (!newProduct.name||!newProduct.price||!newProduct.stock) return;
+                    save(async () => {
+                      const newProds = [...products, { ...newProduct, id: Date.now(), price: Number(newProduct.price), originalPrice: newProduct.originalPrice?Number(newProduct.originalPrice):null, stock: Number(newProduct.stock) }];
+                      setProducts(newProds); await onSaveProducts(newProds);
+                      setNewProduct({ name:"",price:"",originalPrice:"",stock:"",unit:"個",type:"dessert" }); setShowNewProd(false);
+                    });
                   }}>新增</button>
                   <button style={S.btnOutline} onClick={() => setShowNewProd(false)}>取消</button>
                 </div>
@@ -623,14 +570,14 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <div key={g.id} style={S.card}>
                 {editGift?.id === g.id ? (
                   <div>
-                    {[["name", "贈品名稱"], ["desc", "說明（選填）"], ["stock", "庫存數量"]].map(([k, label]) => (
+                    {[["name","贈品名稱"],["desc","說明（選填）"],["stock","庫存數量"]].map(([k,label]) => (
                       <div key={k} style={{ marginBottom: "10px" }}>
                         <label style={S.label}>{label}</label>
-                        <input type={k === "stock" ? "number" : "text"} style={S.input} value={editGift[k] ?? ""} onChange={e => setEditGift(v => ({ ...v, [k]: k === "stock" ? Number(e.target.value) : e.target.value }))} />
+                        <input type={k==="stock"?"number":"text"} style={S.input} value={editGift[k]??""} onChange={e => setEditGift(v=>({...v,[k]:k==="stock"?Number(e.target.value):e.target.value}))} />
                       </div>
                     ))}
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => { setGifts(gs => gs.map(x => x.id === editGift.id ? editGift : x)); setEditGift(null); }}>儲存</button>
+                      <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => save(async () => { const newGifts = gifts.map(x=>x.id===editGift.id?editGift:x); setGifts(newGifts); await onSaveGifts(newGifts); setEditGift(null); })}>儲存</button>
                       <button style={S.btnOutline} onClick={() => setEditGift(null)}>取消</button>
                     </div>
                   </div>
@@ -638,13 +585,11 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <div style={{ fontSize: "15px", marginBottom: "2px" }}>{g.name}</div>
-                      <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>
-                        {g.desc && <span>{g.desc}　</span>}庫存 <span style={{ color: g.stock <= 0 ? C.red : C.green, fontWeight: "600" }}>{g.stock}</span>
-                      </div>
+                      <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>{g.desc && <span>{g.desc}　</span>}庫存 <span style={{ color: g.stock<=0?C.red:C.green, fontWeight: "600" }}>{g.stock}</span></div>
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
-                      <button style={S.btnOutline} onClick={() => setEditGift({ ...g })}>編輯</button>
-                      <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red }} onClick={() => setGifts(gs => gs.filter(x => x.id !== g.id))}>刪除</button>
+                      <button style={S.btnOutline} onClick={() => setEditGift({...g})}>編輯</button>
+                      <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red }} onClick={() => save(async () => { const newGifts = gifts.filter(x=>x.id!==g.id); setGifts(newGifts); await onSaveGifts(newGifts); })}>刪除</button>
                     </div>
                   </div>
                 )}
@@ -652,17 +597,20 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
             ))}
             {showNewGift ? (
               <div style={S.card}>
-                {[["name", "贈品名稱", "text"], ["desc", "說明（選填）", "text"], ["stock", "庫存數量", "number"]].map(([k, label, type]) => (
+                {[["name","贈品名稱","text"],["desc","說明（選填）","text"],["stock","庫存數量","number"]].map(([k,label,type]) => (
                   <div key={k} style={{ marginBottom: "10px" }}>
                     <label style={S.label}>{label}</label>
-                    <input type={type} style={S.input} value={newGift[k] ?? ""} onChange={e => setNewGift(v => ({ ...v, [k]: e.target.value }))} />
+                    <input type={type} style={S.input} value={newGift[k]??""} onChange={e => setNewGift(v=>({...v,[k]:e.target.value}))} />
                   </div>
                 ))}
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => {
-                    if (!newGift.name.trim() || !newGift.stock) return;
-                    setGifts(gs => [...gs, { ...newGift, id: Date.now(), stock: Number(newGift.stock) }]);
-                    setNewGift({ name: "", desc: "", stock: "" }); setShowNewGift(false);
+                    if (!newGift.name.trim()||!newGift.stock) return;
+                    save(async () => {
+                      const newGifts = [...gifts, {...newGift, id: Date.now(), stock: Number(newGift.stock)}];
+                      setGifts(newGifts); await onSaveGifts(newGifts);
+                      setNewGift({name:"",desc:"",stock:""}); setShowNewGift(false);
+                    });
                   }}>新增</button>
                   <button style={S.btnOutline} onClick={() => setShowNewGift(false)}>取消</button>
                 </div>
@@ -677,42 +625,44 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
           <>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "14px" }}>📢 訂購頁公告</div>
-              <textarea style={{ ...S.input, height: "90px", resize: "vertical" }} value={openInfo} onChange={e => setOpenInfo(e.target.value)} placeholder="例：6/29（六）大安市集　12:00–17:00 開放取貨" />
+              <textarea style={{ ...S.input, height: "90px", resize: "vertical" }} value={openInfo||""} onChange={e => setSettings(v=>({...v,openInfo:e.target.value}))} placeholder="例：6/29（六）大安市集　12:00–17:00" />
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "6px" }}>🌸 訂購成功提醒</div>
-              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>客人送出訂單後顯示於成功頁面。</div>
-              <textarea style={{ ...S.input, height: "120px", resize: "vertical", lineHeight: "1.8" }} value={successNote} onChange={e => setSuccessNote(e.target.value)} placeholder="例：請留意我們的 LINE 通知…" />
+              <textarea style={{ ...S.input, height: "120px", resize: "vertical", lineHeight: "1.8" }} value={successNote||""} onChange={e => setSettings(v=>({...v,successNote:e.target.value}))} placeholder="例：請留意我們的 LINE 通知…" />
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "6px" }}>📋 訂購須知</div>
-              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>客人開啟訂購頁時必須滑完並按已詳閱才能訂購。留空則不顯示。</div>
-              <textarea style={{ ...S.input, height: "180px", resize: "vertical", lineHeight: "1.8" }} value={noticeText} onChange={e => setNoticeText(e.target.value)} placeholder="輸入訂購須知內容…" />
+              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>留空則不顯示。</div>
+              <textarea style={{ ...S.input, height: "180px", resize: "vertical", lineHeight: "1.8" }} value={noticeText||""} onChange={e => setSettings(v=>({...v,noticeText:e.target.value}))} placeholder="輸入訂購須知內容…" />
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "14px" }}>⏰ 取貨時段</div>
-              {pickupSlots.map((s, i) => (
+              {(pickupSlots||[]).map((s,i) => (
                 <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
                   <div style={{ flex: 1, fontFamily: "sans-serif", fontSize: "14px", padding: "8px 12px", background: C.rosePale, borderRadius: "4px", border: `1px solid ${C.border}` }}>{s}</div>
-                  <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red, padding: "6px 10px" }} onClick={() => setPickupSlots(ss => ss.filter((_, j) => j !== i))}>刪除</button>
+                  <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red, padding: "6px 10px" }} onClick={() => { const newSlots=(pickupSlots||[]).filter((_,j)=>j!==i); setSettings(v=>({...v,pickupSlots:newSlots})); save(()=>onSaveSettings({...settings,pickupSlots:newSlots})); }}>刪除</button>
                 </div>
               ))}
               <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                <input style={{ ...S.input, flex: 1 }} placeholder="例：16:00" value={newSlot} onChange={e => setNewSlot(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && newSlot.trim()) { setPickupSlots(ss => [...ss, newSlot.trim()]); setNewSlot(""); } }} />
-                <button style={{ ...S.btnRose, width: "auto", padding: "10px 16px" }} onClick={() => { if (newSlot.trim()) { setPickupSlots(ss => [...ss, newSlot.trim()]); setNewSlot(""); } }}>新增</button>
+                <input style={{ ...S.input, flex: 1 }} placeholder="例：16:00" value={newSlot} onChange={e => setNewSlot(e.target.value)} onKeyDown={e => { if (e.key==="Enter"&&newSlot.trim()) { const newSlots=[...(pickupSlots||[]),newSlot.trim()]; setSettings(v=>({...v,pickupSlots:newSlots})); save(()=>onSaveSettings({...settings,pickupSlots:newSlots})); setNewSlot(""); }}} />
+                <button style={{ ...S.btnRose, width: "auto", padding: "10px 16px" }} onClick={() => { if (!newSlot.trim()) return; const newSlots=[...(pickupSlots||[]),newSlot.trim()]; setSettings(v=>({...v,pickupSlots:newSlots})); save(()=>onSaveSettings({...settings,pickupSlots:newSlots})); setNewSlot(""); }}>新增</button>
               </div>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "14px" }}>📍 取貨地點</div>
-              {pickupLocations.map((l, i) => (
+              {(pickupLocations||[]).map((l,i) => (
                 <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
                   <div style={{ flex: 1, fontFamily: "sans-serif", fontSize: "14px", padding: "8px 12px", background: C.rosePale, borderRadius: "4px", border: `1px solid ${C.border}` }}>{l}</div>
-                  <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red, padding: "6px 10px" }} onClick={() => setPickupLocations(ls => ls.filter((_, j) => j !== i))}>刪除</button>
+                  <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red, padding: "6px 10px" }} onClick={() => { const newLocs=(pickupLocations||[]).filter((_,j)=>j!==i); setSettings(v=>({...v,pickupLocations:newLocs})); save(()=>onSaveSettings({...settings,pickupLocations:newLocs})); }}>刪除</button>
                 </div>
               ))}
               <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                <input style={{ ...S.input, flex: 1 }} placeholder="例：大安市集" value={newLocation} onChange={e => setNewLocation(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && newLocation.trim()) { setPickupLocations(ls => [...ls, newLocation.trim()]); setNewLocation(""); } }} />
-                <button style={{ ...S.btnRose, width: "auto", padding: "10px 16px" }} onClick={() => { if (newLocation.trim()) { setPickupLocations(ls => [...ls, newLocation.trim()]); setNewLocation(""); } }}>新增</button>
+                <input style={{ ...S.input, flex: 1 }} placeholder="例：大安市集" value={newLocation} onChange={e => setNewLocation(e.target.value)} onKeyDown={e => { if (e.key==="Enter"&&newLocation.trim()) { const newLocs=[...(pickupLocations||[]),newLocation.trim()]; setSettings(v=>({...v,pickupLocations:newLocs})); save(()=>onSaveSettings({...settings,pickupLocations:newLocs})); setNewLocation(""); }}} />
+                <button style={{ ...S.btnRose, width: "auto", padding: "10px 16px" }} onClick={() => { if (!newLocation.trim()) return; const newLocs=[...(pickupLocations||[]),newLocation.trim()]; setSettings(v=>({...v,pickupLocations:newLocs})); save(()=>onSaveSettings({...settings,pickupLocations:newLocs})); setNewLocation(""); }}>新增</button>
               </div>
             </div>
           </>
@@ -722,31 +672,52 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
   );
 }
 
+// ── Root ────────────────────────────────────────────────────
 export default function App() {
-  const [rawProducts, setProducts] = useStorage("liveta_products", initialProducts);
-  const products = rawProducts.map(p => ({ ...p, type: p.type || "dessert" }));
-  const [gifts, setGifts] = useStorage("liveta_gifts", initialGifts);
-  const [orders, setOrders] = useStorage("liveta_orders", []);
-  const [isOpen, setIsOpen] = useStorage("liveta_isOpen", false);
-  const [openInfo, setOpenInfo] = useStorage("liveta_openInfo", "");
-  const [successNote, setSuccessNote] = useStorage("liveta_successNote", "✦ 請留意我們的 LINE 通知，確認訂單後才算成立\n✦ 取貨請準時到場，現場製作限量供應\n✦ 若有任何問題歡迎透過 LINE 與我們聯繫");
-  const [noticeText, setNoticeText] = useStorage("liveta_notice", "");
-  const [pickupSlots, setPickupSlots] = useStorage("liveta_slots", ["16:00", "16:30", "17:00", "17:30"]);
-  const [pickupLocations, setPickupLocations] = useStorage("liveta_locations", []);
+  const [products, setProducts] = useState([]);
+  const [gifts, setGifts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [] });
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState("order");
   const [pw, setPw] = useState(""); const [pwErr, setPwErr] = useState(false);
 
-  function handleOrder(order) {
-    setOrders(os => [...os, order]);
-    setProducts(ps => ps.map(p => { const item = order.items.find(i => i.productId === p.id); return item ? { ...p, stock: Math.max(0, p.stock - item.qty) } : p; }));
-    if (order.gifts) order.gifts.forEach(gi => setGifts(gs => gs.map(g => g.id === gi.id ? { ...g, stock: Math.max(0, g.stock - gi.qty) } : g)));
+  useEffect(() => {
+    async function load() {
+      try {
+        const [pRes, gRes, sRes, oRes] = await Promise.all([
+          apiGet("getProducts"), apiGet("getGifts"), apiGet("getSettings"), apiGet("getOrders")
+        ]);
+        if (pRes.success) setProducts(pRes.products);
+        if (gRes.success) setGifts(gRes.gifts);
+        if (sRes.success && sRes.settings && Object.keys(sRes.settings).length > 0) setSettings(s => ({ ...s, ...sRes.settings }));
+        if (oRes.success) setOrders(oRes.orders || []);
+      } catch(e) { console.log("載入失敗", e); }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const onSaveProducts = useCallback(async (prods) => { await apiPost({ action: "saveProducts", products: prods }); }, []);
+  const onSaveGifts = useCallback(async (gs) => { await apiPost({ action: "saveGifts", gifts: gs }); }, []);
+  const onSaveSettings = useCallback(async (s) => { setSettings(s); await apiPost({ action: "saveSettings", settings: s }); }, []);
+
+  if (loading) {
+    return (
+      <div style={{ ...S.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", color: C.muted, fontFamily: "sans-serif" }}>
+          <div style={{ fontSize: "30px", marginBottom: "12px" }}>🌸</div>
+          <div>載入中…</div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div>
       {view === "order" && (
         <>
-          <OrderPage products={products} gifts={gifts} isOpen={isOpen} openInfo={openInfo} noticeText={noticeText} successNote={successNote} pickupSlots={pickupSlots} pickupLocations={pickupLocations} onSubmit={handleOrder} />
+          <OrderPage products={products} gifts={gifts} settings={settings} onSubmit={() => {}} />
           <button onClick={() => setView("login")} style={{ position: "fixed", bottom: "20px", right: "20px", background: C.ink, color: C.roseMid, border: "none", borderRadius: "50%", width: "44px", height: "44px", fontSize: "18px", cursor: "pointer", boxShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>⚙</button>
         </>
       )}
@@ -755,24 +726,16 @@ export default function App() {
           <div style={{ ...S.card, width: "300px" }}>
             <p style={{ color: C.rose, textAlign: "center", marginBottom: "20px", fontSize: "18px", fontFamily: "sans-serif" }}>後台登入</p>
             <label style={S.label}>密碼</label>
-            <input type="password" style={{ ...S.input, marginBottom: "12px" }} value={pw}
-              onChange={e => { setPw(e.target.value); setPwErr(false); }}
-              onKeyDown={e => e.key === "Enter" && (pw === ADMIN_PASSWORD ? (setView("admin"), setPw("")) : setPwErr(true))}
-              placeholder="輸入後台密碼" />
+            <input type="password" style={{ ...S.input, marginBottom: "12px" }} value={pw} onChange={e => { setPw(e.target.value); setPwErr(false); }} onKeyDown={e => e.key==="Enter"&&(pw===ADMIN_PASSWORD?(setView("admin"),setPw("")):setPwErr(true))} placeholder="輸入後台密碼" />
             {pwErr && <div style={{ padding: "8px 12px", marginBottom: "10px", background: C.redPale, borderRadius: "3px", fontFamily: "sans-serif", fontSize: "12px", color: C.red }}>密碼錯誤</div>}
-            <button style={S.btnRose} onClick={() => pw === ADMIN_PASSWORD ? (setView("admin"), setPw("")) : setPwErr(true)}>進入後台</button>
+            <button style={S.btnRose} onClick={() => pw===ADMIN_PASSWORD?(setView("admin"),setPw("")):setPwErr(true)}>進入後台</button>
             <button style={{ ...S.btnOutline, width: "100%", marginTop: "8px" }} onClick={() => { setView("order"); setPw(""); setPwErr(false); }}>返回</button>
           </div>
         </div>
       )}
       {view === "admin" && (
         <>
-          <AdminPanel products={products} setProducts={setProducts} gifts={gifts} setGifts={setGifts}
-            orders={orders} setOrders={setOrders} isOpen={isOpen} setIsOpen={setIsOpen}
-            openInfo={openInfo} setOpenInfo={setOpenInfo} noticeText={noticeText} setNoticeText={setNoticeText}
-            successNote={successNote} setSuccessNote={setSuccessNote}
-            pickupSlots={pickupSlots} setPickupSlots={setPickupSlots}
-            pickupLocations={pickupLocations} setPickupLocations={setPickupLocations} />
+          <AdminPanel products={products} setProducts={setProducts} gifts={gifts} setGifts={setGifts} orders={orders} setOrders={setOrders} settings={settings} setSettings={setSettings} onSaveProducts={onSaveProducts} onSaveGifts={onSaveGifts} onSaveSettings={onSaveSettings} />
           <button onClick={() => setView("order")} style={{ position: "fixed", bottom: "20px", right: "20px", background: C.ink, color: C.roseMid, border: "none", borderRadius: "50%", width: "44px", height: "44px", fontSize: "18px", cursor: "pointer", boxShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>🛍</button>
         </>
       )}
