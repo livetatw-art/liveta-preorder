@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const LOGO_B64 = "https://raw.githubusercontent.com/livetatw-art/liveta-preorder/main/logo.png";
+const LOGO_B64 = "https://raw.githubusercontent.com/livetatw-art/liveta-preorder/main/Logo.png";
 const ADMIN_PASSWORD = "liveta2024";
 const LINE_PAY_URL = "https://line.me/R/pay/payment?action=reserve&encPath=3LalDOBtaG%252BfOQPfnbqO83EJUw%252F%252BT4kr9hdSAskChhhQDjw5UaaVT6XpZr7o6S0F&merchantProvider=LINEPAY#~";
 const ATM_INFO = { bank: "中國信託（822）", account: "901561833284" };
@@ -46,6 +46,23 @@ async function apiPost(body) {
 }
 
 // ── Header ─────────────────────────────────────────────────
+// ── 庫存群組 helpers ───────────────────────────────────────
+function getGroupStock(stockGroups, groupId) {
+  if (!groupId || !stockGroups) return null;
+  return stockGroups.find(g => g.id === groupId) || null;
+}
+
+function getEffectiveStock(item, stockGroups) {
+  if (item.groupId && stockGroups) {
+    const group = getGroupStock(stockGroups, item.groupId);
+    if (group) {
+      const units = item.groupUnits || 1;
+      return Math.floor(group.stock / units);
+    }
+  }
+  return item.stock;
+}
+
 function Header() {
   return (
     <>
@@ -64,8 +81,9 @@ function Header() {
 }
 
 // ── ProductCard ─────────────────────────────────────────────
-function ProductCard({ product, qty, onChange }) {
-  const soldOut = product.stock <= 0;
+function ProductCard({ product, qty, onChange, settings }) {
+  const effectiveStock = getEffectiveStock(product, settings?.stockGroups);
+  const soldOut = effectiveStock <= 0;
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   return (
     <div style={{ ...S.card, opacity: soldOut ? 0.55 : 1 }}>
@@ -95,9 +113,15 @@ function ProductCard({ product, qty, onChange }) {
 }
 
 // ── GiftSection ─────────────────────────────────────────────
-function GiftSection({ gifts, giftQty, giftCart, onChangeGift }) {
+function GiftSection({ gifts, giftQty, giftCart, onChangeGift, stockGroups }) {
   if (giftQty === 0 || gifts.length === 0) return null;
-  const availableGifts = gifts.filter(g => g.stock > 0);
+  const availableGifts = gifts.filter(g => {
+    if (g.groupId && stockGroups) {
+      const group = stockGroups.find(gr => gr.id === g.groupId);
+      if (group) return group.stock > 0;
+    }
+    return g.stock > 0;
+  });
   const chosen = Object.values(giftCart).reduce((s, q) => s + q, 0);
   const remaining = giftQty - chosen;
   return (
@@ -127,7 +151,12 @@ function GiftSection({ gifts, giftQty, giftCart, onChangeGift }) {
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <button onClick={() => onChangeGift(g.id, Math.max(0, qty - 1))} style={{ width: "28px", height: "28px", border: `1px solid ${C.border}`, borderRadius: "4px", background: C.cream, cursor: "pointer", fontSize: "16px", color: C.muted }}>−</button>
                   <span style={{ fontFamily: "sans-serif", fontSize: "15px", minWidth: "16px", textAlign: "center", color: qty > 0 ? "#b8960a" : C.ink, fontWeight: qty > 0 ? "600" : "400" }}>{qty}</span>
-                  <button onClick={() => { if (remaining > 0) onChangeGift(g.id, qty + 1); }} style={{ width: "28px", height: "28px", border: `1px solid ${C.border}`, borderRadius: "4px", background: remaining > 0 ? C.cream : "#f0f0f0", cursor: remaining > 0 ? "pointer" : "default", fontSize: "16px", color: remaining > 0 ? C.ink : C.muted }}>+</button>
+                  <button onClick={() => {
+                    if (remaining <= 0) return;
+                    const gGroup = g.groupId && stockGroups ? stockGroups.find(gr => gr.id === g.groupId) : null;
+                    const groupAvail = gGroup ? gGroup.stock - Object.entries(giftCart).reduce((s,[id,q]) => { const og = gifts?.find(x=>x.id===Number(id)); return og?.groupId===g.groupId ? s+q*(og.groupUnits||1) : s; }, 0) >= (g.groupUnits||1) : true;
+                    if (groupAvail) onChangeGift(g.id, qty + 1);
+                  }} style={{ width: "28px", height: "28px", border: `1px solid ${C.border}`, borderRadius: "4px", background: remaining > 0 ? C.cream : "#f0f0f0", cursor: remaining > 0 ? "pointer" : "default", fontSize: "16px", color: remaining > 0 ? C.ink : C.muted }}>+</button>
                 </div>
               </div>
             );
@@ -170,7 +199,13 @@ function OrderPage({ products, gifts, settings, onSubmit }) {
     if (form.payment === "line_pay" && !form.proofFile) return setError("請上傳 LINE Pay 付款截圖");
     if (form.payment === "atm" && form.atmLast5.trim().length !== 5) return setError("請填寫匯款末 5 碼");
     if (!hasItems) return setError("請至少選擇一項商品");
-    const availableGifts = gifts.filter(g => g.stock > 0);
+    const availableGifts = gifts.filter(g => {
+    if (g.groupId && stockGroups) {
+      const group = stockGroups.find(gr => gr.id === g.groupId);
+      if (group) return group.stock > 0;
+    }
+    return g.stock > 0;
+  });
     const chosenTotal = Object.values(giftCart).reduce((s, q) => s + q, 0);
     if (giftQty > 0 && availableGifts.length > 0 && chosenTotal < giftQty) return setError(`請選擇 ${giftQty} 份贈品（還差 ${giftQty - chosenTotal} 份）`);
     setError("");
@@ -184,6 +219,25 @@ function OrderPage({ products, gifts, settings, onSubmit }) {
     setOrderRef(ref);
     const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
     await apiPost(orderData);
+    // 更新群組庫存
+    if (settings.stockGroups && settings.stockGroups.length > 0) {
+      const newGroups = [...settings.stockGroups];
+      items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (product && product.groupId) {
+          const gi = newGroups.findIndex(g => g.id === product.groupId);
+          if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - item.qty * (product.groupUnits || 1)) };
+        }
+      });
+      giftItems.forEach(gi_item => {
+        const gift = gifts.find(g => g.id === gi_item.id);
+        if (gift && gift.groupId) {
+          const gi = newGroups.findIndex(g => g.id === gift.groupId);
+          if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - gi_item.qty * (gift.groupUnits || 1)) };
+        }
+      });
+      await onSaveSettings({ ...settings, stockGroups: newGroups });
+    }
     onSubmit(orderData);
     const itemList = items.map(i => `${i.name} x${i.qty}`).join(", ");
     const giftList = giftItems.length > 0 ? giftItems.map(g => `${g.name} x${g.qty}`).join(", ") : "無";
@@ -286,14 +340,14 @@ function OrderPage({ products, gifts, settings, onSubmit }) {
             <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, letterSpacing: "0.15em", marginBottom: "4px" }}>DESSERTS</div>
             <div style={{ fontSize: "18px" }}>🍰 甜點</div>
           </div>
-          {desserts.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} />)}
+          {desserts.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} settings={settings} />)}
         </>}
         {drinks.length > 0 && <>
           <div style={{ marginBottom: "16px", marginTop: "8px" }}>
             <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, letterSpacing: "0.15em", marginBottom: "4px" }}>DRINKS</div>
             <div style={{ fontSize: "18px" }}>🧋 飲品</div>
           </div>
-          {drinks.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} />)}
+          {drinks.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} settings={settings} />)}
         </>}
         {desserts.length === 0 && drinks.length === 0 && (
           <div style={{ ...S.card, textAlign: "center", padding: "40px", color: C.muted, fontFamily: "sans-serif" }}>本週品項尚未設定，請稍後再來 🌸</div>
@@ -306,7 +360,7 @@ function OrderPage({ products, gifts, settings, onSubmit }) {
             </div>
           </div>
         )}
-        <GiftSection gifts={gifts} giftQty={giftQty} giftCart={giftCart} onChangeGift={(id, qty) => setGiftCart(c => ({ ...c, [id]: qty }))} />
+        <GiftSection gifts={gifts} giftQty={giftQty} giftCart={giftCart} onChangeGift={(id, qty) => setGiftCart(c => ({ ...c, [id]: qty }))} stockGroups={settings.stockGroups} />
         <div style={S.divider} />
         <div style={{ marginBottom: "20px" }}>
           <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, letterSpacing: "0.15em", marginBottom: "4px" }}>YOUR INFO</div>
@@ -381,6 +435,82 @@ function OrderPage({ products, gifts, settings, onSubmit }) {
 }
 
 // ── AdminPanel ──────────────────────────────────────────────
+function GroupsTab({ settings, setSettings, onSaveSettings, products, gifts }) {
+  const stockGroups = settings.stockGroups || [];
+  const [newGroup, setNewGroup] = useState({ name: "", stock: "" });
+  const [showNew, setShowNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function save(newGroups) {
+    setSaving(true);
+    const newSettings = { ...settings, stockGroups: newGroups };
+    setSettings(newSettings);
+    await onSaveSettings(newSettings);
+    setSaving(false);
+  }
+
+  // Get items bound to a group
+  function getGroupMembers(groupId) {
+    const prods = products.filter(p => p.groupId === groupId).map(p => `🍰 ${p.name}（×${p.groupUnits || 1}顆/單位）`);
+    const gs = gifts.filter(g => g.groupId === groupId).map(g => `🎁 ${g.name}（×${g.groupUnits || 1}顆/單位）`);
+    return [...prods, ...gs];
+  }
+
+  return (
+    <div>
+      <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "16px", padding: "12px 14px", background: C.rosePale, borderRadius: "6px", border: `1px solid ${C.roseMid}` }}>
+        📦 設定庫存群組後，在品項或贈品編輯時選擇群組，訂購或贈送都會從同一個總庫存扣除。
+      </div>
+      {saving && <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "8px" }}>儲存中…</div>}
+      {stockGroups.map(g => (
+        <div key={g.id} style={S.card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+            <div>
+              <div style={{ fontSize: "16px", marginBottom: "4px" }}>{g.name}</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>
+                剩餘庫存：<span style={{ color: g.stock <= 0 ? C.red : C.green, fontWeight: "600" }}>{g.stock}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <input type="number" style={{ ...S.input, width: "80px", padding: "6px 10px" }} value={g.stock}
+                onChange={e => { const newGroups = stockGroups.map(x => x.id === g.id ? { ...x, stock: Number(e.target.value) } : x); save(newGroups); }} />
+              <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red, padding: "6px 10px" }}
+                onClick={() => save(stockGroups.filter(x => x.id !== g.id))}>刪除</button>
+            </div>
+          </div>
+          {getGroupMembers(g.id).length > 0 && (
+            <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, lineHeight: "1.8", borderTop: `1px solid ${C.border}`, paddingTop: "8px" }}>
+              {getGroupMembers(g.id).map((m, i) => <div key={i}>{m}</div>)}
+            </div>
+          )}
+        </div>
+      ))}
+      {showNew ? (
+        <div style={S.card}>
+          <div style={{ marginBottom: "10px" }}>
+            <label style={S.label}>群組名稱</label>
+            <input style={S.input} value={newGroup.name} onChange={e => setNewGroup(v => ({ ...v, name: e.target.value }))} placeholder="例：Q球、原味費南雪" />
+          </div>
+          <div style={{ marginBottom: "12px" }}>
+            <label style={S.label}>總庫存數量</label>
+            <input type="number" style={S.input} value={newGroup.stock} onChange={e => setNewGroup(v => ({ ...v, stock: e.target.value }))} placeholder="例：100" />
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => {
+              if (!newGroup.name.trim() || !newGroup.stock) return;
+              save([...stockGroups, { id: Date.now(), name: newGroup.name.trim(), stock: Number(newGroup.stock) }]);
+              setNewGroup({ name: "", stock: "" }); setShowNew(false);
+            }}>新增</button>
+            <button style={S.btnOutline} onClick={() => setShowNew(false)}>取消</button>
+          </div>
+        </div>
+      ) : (
+        <button style={{ ...S.btnOutline, width: "100%", padding: "12px", borderStyle: "dashed" }} onClick={() => setShowNew(true)}>＋ 新增庫存群組</button>
+      )}
+    </div>
+  );
+}
+
 function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders, settings, setSettings, onSaveProducts, onSaveGifts, onSaveSettings }) {
   const [tab, setTab] = useState("orders");
   const [editProduct, setEditProduct] = useState(null);
@@ -441,7 +571,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         </div>
       </header>
       <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, display: "flex", paddingLeft: "8px", overflowX: "auto" }}>
-        {[["orders","📋 訂單"],["products","🍰 品項"],["gifts","🎁 贈品"],["settings","⚙️ 設定"]].map(([key,label]) => (
+        {[["orders","📋 訂單"],["products","🍰 品項"],["gifts","🎁 贈品"],["groups","📦 庫存群組"],["settings","⚙️ 設定"]].map(([key,label]) => (
           <button key={key} style={tabStyle(tab===key)} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
@@ -502,13 +632,26 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
                   <div>
-                    {[["name","品項名稱","text"],["price","售價","number"],["originalPrice","原價（選填，填了才顯示劃線原價）","number"],["stock","庫存數量","number"],["unit","單位","text"]].map(([k,label,type]) => (
+                    {[["name","品項名稱","text"],["price","售價","number"],["originalPrice","原價（選填，填了才顯示劃線原價）","number"],["stock","庫存數量（無群組時使用）","number"],["unit","單位","text"]].map(([k,label,type]) => (
                       <div key={k} style={{ marginBottom: "10px" }}>
                         <label style={S.label}>{label}</label>
                         <input type={type} style={S.input} value={editProduct[k]??""} onChange={e => setEditProduct(v=>({...v,[k]:(k==="price"||k==="stock"||k==="originalPrice")?(e.target.value===""?null:Number(e.target.value)):e.target.value}))} />
                       </div>
                     ))}
                     {typeToggle(editProduct, setEditProduct)}
+                    <div style={{ marginBottom: "12px" }}>
+                      <label style={S.label}>庫存群組（選填）</label>
+                      <select style={S.select} value={editProduct.groupId || ""} onChange={e => setEditProduct(v => ({ ...v, groupId: e.target.value ? Number(e.target.value) : null }))}>
+                        <option value="">不使用群組</option>
+                        {(settings.stockGroups || []).map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                      {editProduct.groupId && (
+                        <div style={{ marginTop: "8px" }}>
+                          <label style={S.label}>此品項消耗幾顆群組庫存</label>
+                          <input type="number" style={S.input} value={editProduct.groupUnits || 1} onChange={e => setEditProduct(v => ({ ...v, groupUnits: Number(e.target.value) }))} />
+                        </div>
+                      )}
+                    </div>
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => save(async () => { const newProds = products.map(x=>x.id===editProduct.id?editProduct:x); setProducts(newProds); await onSaveProducts(newProds); setEditProduct(null); })}>儲存</button>
                       <button style={S.btnOutline} onClick={() => setEditProduct(null)}>取消</button>
@@ -576,6 +719,19 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                         <input type={k==="stock"?"number":"text"} style={S.input} value={editGift[k]??""} onChange={e => setEditGift(v=>({...v,[k]:k==="stock"?Number(e.target.value):e.target.value}))} />
                       </div>
                     ))}
+                    <div style={{ marginBottom: "10px" }}>
+                      <label style={S.label}>庫存群組（選填）</label>
+                      <select style={S.select} value={editGift.groupId || ""} onChange={e => setEditGift(v => ({ ...v, groupId: e.target.value ? Number(e.target.value) : null }))}>
+                        <option value="">不使用群組</option>
+                        {(settings.stockGroups || []).map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                      {editGift.groupId && (
+                        <div style={{ marginTop: "8px" }}>
+                          <label style={S.label}>此贈品消耗幾顆群組庫存</label>
+                          <input type="number" style={S.input} value={editGift.groupUnits || 1} onChange={e => setEditGift(v => ({ ...v, groupUnits: Number(e.target.value) }))} />
+                        </div>
+                      )}
+                    </div>
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => save(async () => { const newGifts = gifts.map(x=>x.id===editGift.id?editGift:x); setGifts(newGifts); await onSaveGifts(newGifts); setEditGift(null); })}>儲存</button>
                       <button style={S.btnOutline} onClick={() => setEditGift(null)}>取消</button>
@@ -619,6 +775,10 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <button style={{ ...S.btnOutline, width: "100%", padding: "12px", borderStyle: "dashed" }} onClick={() => setShowNewGift(true)}>＋ 新增贈品</button>
             )}
           </>
+        )}
+
+        {tab === "groups" && (
+          <GroupsTab settings={settings} setSettings={setSettings} onSaveSettings={onSaveSettings} products={products} gifts={gifts} />
         )}
 
         {tab === "settings" && (
@@ -677,7 +837,7 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [gifts, setGifts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [] });
+  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [], stockGroups: [] });
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("order");
   const [pw, setPw] = useState(""); const [pwErr, setPwErr] = useState(false);
