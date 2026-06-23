@@ -599,7 +599,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   <span style={S.tag(statusColors[o.status]?.c||C.muted, statusColors[o.status]?.bg||C.border)}>{o.status||"待確認"}</span>
                 </div>
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "8px", lineHeight: "1.8" }}>
-                  {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}⏰ {o.pickupTime}　💳 {payLabel(o.payment)}
+                  {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}📅 {settings.pickupDate || "（未設日期）"}　⏰ {typeof o.pickupTime === "string" ? o.pickupTime : ""}　💳 {payLabel(o.payment)}
                   {o.payment === "atm" && o.atmLast5 && <span style={{ color: C.ink }}>　末5碼：{o.atmLast5}</span>}
                   {o.payment === "line_pay" && !o.proofImage && <span style={{ color: C.red }}>　⚠未截圖</span>}
                 </div>
@@ -850,6 +850,12 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
             </div>
             <div style={S.card}>
+              <div style={{ fontSize: "15px", marginBottom: "10px" }}>📅 取貨日期</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>由後台設定，客人下單時不會看到，僅顯示於後台訂單中。</div>
+              <input type="date" style={S.input} value={settings.pickupDate || ""} onChange={e => setSettings(v => ({ ...v, pickupDate: e.target.value }))} />
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
+            </div>
+            <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "14px" }}>⏰ 取貨時段</div>
               {(pickupSlots||[]).map((s,i) => (
                 <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
@@ -952,3 +958,5 @@ export default function App() {
     </div>
   );
 }
+
+
