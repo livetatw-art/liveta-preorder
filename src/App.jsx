@@ -242,13 +242,6 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
       }
     } catch(e) { console.log("群組庫存更新失敗", e); }
     onSubmit(orderData);
-    const itemList = items.map(i => `${i.name} x${i.qty}`).join(", ");
-    const giftList = giftItems.length > 0 ? giftItems.map(g => `${g.name} x${g.qty}`).join(", ") : "無";
-    const subject = encodeURIComponent(`【莉薇塔新訂單】${ref} - ${form.name}`);
-    const body = encodeURIComponent(`訂單編號：${ref}\n姓名：${form.name}\n電話：${form.phone}\n取貨地點：${form.pickupLocation || "未填"}\n取貨時間：${form.pickupTime}\n付款方式：${payLabel(form.payment)}${form.atmLast5 ? `（末5碼：${form.atmLast5}）` : ""}\n\n商品：${itemList}\n贈品：${giftList}\n合計：NT$ ${total}\n\n備註：${form.note || "無"}`);
-    try {
-      window.location.href = `mailto:livetatw@gmail.com?subject=${subject}&body=${body}`;
-    } catch(e) { console.log("email失敗", e); }
     setSubmitted(true);
     } catch(err) {
       console.error("送出錯誤:", err);
