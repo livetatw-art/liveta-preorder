@@ -220,31 +220,35 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     setOrderRef(ref);
     const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
     await apiPost(orderData);
-    // 更新群組庫存
-    if (settings.stockGroups && settings.stockGroups.length > 0) {
-      const newGroups = [...settings.stockGroups];
-      items.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (product && product.groupId) {
-          const gi = newGroups.findIndex(g => g.id === product.groupId);
-          if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - item.qty * (product.groupUnits || 1)) };
-        }
-      });
-      giftItems.forEach(gi_item => {
-        const gift = gifts.find(g => g.id === gi_item.id);
-        if (gift && gift.groupId) {
-          const gi = newGroups.findIndex(g => g.id === gift.groupId);
-          if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - gi_item.qty * (gift.groupUnits || 1)) };
-        }
-      });
-      await onSaveSettings({ ...settings, stockGroups: newGroups });
-    }
+    // 更新群組庫存（靜默執行，不影響送出流程）
+    try {
+      if (settings.stockGroups && settings.stockGroups.length > 0) {
+        const newGroups = [...settings.stockGroups];
+        items.forEach(item => {
+          const product = products.find(p => p.id === item.productId);
+          if (product && product.groupId) {
+            const gi = newGroups.findIndex(g => g.id === product.groupId);
+            if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - item.qty * (product.groupUnits || 1)) };
+          }
+        });
+        giftItems.forEach(gi_item => {
+          const gift = gifts.find(g => g.id === gi_item.id);
+          if (gift && gift.groupId) {
+            const gi = newGroups.findIndex(g => g.id === gift.groupId);
+            if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - gi_item.qty * (gift.groupUnits || 1)) };
+          }
+        });
+        if (onSaveSettings) await onSaveSettings({ ...settings, stockGroups: newGroups });
+      }
+    } catch(e) { console.log("群組庫存更新失敗", e); }
     onSubmit(orderData);
     const itemList = items.map(i => `${i.name} x${i.qty}`).join(", ");
     const giftList = giftItems.length > 0 ? giftItems.map(g => `${g.name} x${g.qty}`).join(", ") : "無";
     const subject = encodeURIComponent(`【莉薇塔新訂單】${ref} - ${form.name}`);
     const body = encodeURIComponent(`訂單編號：${ref}\n姓名：${form.name}\n電話：${form.phone}\n取貨地點：${form.pickupLocation || "未填"}\n取貨時間：${form.pickupTime}\n付款方式：${payLabel(form.payment)}${form.atmLast5 ? `（末5碼：${form.atmLast5}）` : ""}\n\n商品：${itemList}\n贈品：${giftList}\n合計：NT$ ${total}\n\n備註：${form.note || "無"}`);
-    window.location.href = `mailto:livetatw@gmail.com?subject=${subject}&body=${body}`;
+    try {
+      window.location.href = `mailto:livetatw@gmail.com?subject=${subject}&body=${body}`;
+    } catch(e) { console.log("email失敗", e); }
     setSubmitted(true);
     } catch(err) {
       console.error("送出錯誤:", err);
