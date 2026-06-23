@@ -573,7 +573,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         </div>
       </header>
       <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, display: "flex", paddingLeft: "8px", overflowX: "auto" }}>
-        {[["orders","📋 訂單"],["products","🍰 品項"],["gifts","🎁 贈品"],["groups","📦 庫存群組"],["settings","⚙️ 設定"]].map(([key,label]) => (
+        {[["orders","📋 訂單"],["stats","📊 統計"],["products","🍰 品項"],["gifts","🎁 贈品"],["groups","📦 庫存群組"],["settings","⚙️ 設定"]].map(([key,label]) => (
           <button key={key} style={tabStyle(tab===key)} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
@@ -583,7 +583,10 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>共 {orders.length} 筆</div>
-              <button style={{ ...S.btnOutline, borderColor: C.rose, color: C.rose }} onClick={exportCSV}>匯出 CSV</button>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button style={{ ...S.btnOutline }} onClick={async () => { const oRes = await apiGet("getOrders"); if (oRes.success) setOrders(oRes.orders || []); }}>🔄 重新整理</button>
+                <button style={{ ...S.btnOutline, borderColor: C.rose, color: C.rose }} onClick={exportCSV}>匯出 CSV</button>
+              </div>
             </div>
             {orders.length === 0 && <div style={{ ...S.card, textAlign: "center", padding: "40px", color: C.muted, fontFamily: "sans-serif" }}>尚無訂單</div>}
             {[...orders].reverse().map((o, oi) => (
@@ -625,6 +628,51 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {tab === "stats" && (
+          <>
+            <div style={{ ...S.card }}>
+              <div style={{ fontSize: "15px", marginBottom: "16px" }}>🍰 品項統計</div>
+              {(() => {
+                const countMap = {};
+                orders.filter(o => o.status !== "已取消").forEach(o => {
+                  (o.items || []).forEach(i => {
+                    countMap[i.name] = (countMap[i.name] || 0) + i.qty;
+                  });
+                });
+                const entries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
+                return entries.length === 0
+                  ? <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>尚無訂單資料</div>
+                  : entries.map(([name, qty]) => (
+                    <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                      <span style={{ fontFamily: "sans-serif", fontSize: "14px" }}>{name}</span>
+                      <span style={{ fontFamily: "sans-serif", fontSize: "16px", color: C.rose, fontWeight: "600" }}>{qty}</span>
+                    </div>
+                  ));
+              })()}
+            </div>
+            <div style={{ ...S.card }}>
+              <div style={{ fontSize: "15px", marginBottom: "16px" }}>🎁 贈品統計</div>
+              {(() => {
+                const giftMap = {};
+                orders.filter(o => o.status !== "已取消").forEach(o => {
+                  (o.gifts || []).forEach(g => {
+                    giftMap[g.name] = (giftMap[g.name] || 0) + g.qty;
+                  });
+                });
+                const entries = Object.entries(giftMap).sort((a, b) => b[1] - a[1]);
+                return entries.length === 0
+                  ? <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>尚無贈品資料</div>
+                  : entries.map(([name, qty]) => (
+                    <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                      <span style={{ fontFamily: "sans-serif", fontSize: "14px" }}>{name}</span>
+                      <span style={{ fontFamily: "sans-serif", fontSize: "16px", color: C.amber, fontWeight: "600" }}>{qty}</span>
+                    </div>
+                  ));
+              })()}
+            </div>
           </>
         )}
 
@@ -904,3 +952,4 @@ export default function App() {
     </div>
   );
 }
+
