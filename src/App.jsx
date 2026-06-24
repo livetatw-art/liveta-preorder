@@ -49,17 +49,21 @@ async function apiPost(body) {
 // ── 庫存群組 helpers ───────────────────────────────────────
 function getGroupStock(stockGroups, groupId) {
   if (!groupId || !stockGroups) return null;
-  return stockGroups.find(g => g.id === groupId) || null;
+  return stockGroups.find(g => String(g.id) === String(groupId)) || null;
 }
 
 function getEffectiveStock(item, stockGroups) {
   if (item.groupId && stockGroups) {
     const group = getGroupStock(stockGroups, item.groupId);
+    // 有群組就一定用群組庫存，不看品項自己的 stock
     if (group) {
       const units = item.groupUnits || 1;
       return Math.floor(group.stock / units);
     }
+    // 有 groupId 但找不到群組（被刪了），視為售完
+    return 0;
   }
+  // 沒有群組才用品項自己的庫存
   return item.stock;
 }
 
@@ -104,7 +108,7 @@ function ProductCard({ product, qty, onChange, settings }) {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button onClick={() => onChange(Math.max(0, qty - 1))} style={{ width: "32px", height: "32px", border: `1px solid ${C.border}`, borderRadius: "4px", background: C.cream, cursor: "pointer", fontSize: "18px", color: C.muted }}>−</button>
           <span style={{ fontFamily: "sans-serif", fontSize: "16px", minWidth: "20px", textAlign: "center" }}>{qty}</span>
-          <button onClick={() => onChange(Math.min(product.stock, qty + 1))} style={{ width: "32px", height: "32px", border: `1px solid ${C.border}`, borderRadius: "4px", background: C.cream, cursor: "pointer", fontSize: "18px", color: C.ink }}>+</button>
+          <button onClick={() => onChange(Math.min(effectiveStock, qty + 1))} style={{ width: "32px", height: "32px", border: `1px solid ${C.border}`, borderRadius: "4px", background: C.cream, cursor: "pointer", fontSize: "18px", color: C.ink }}>+</button>
           {qty > 0 && <span style={{ marginLeft: "auto", color: C.rose, fontFamily: "sans-serif", fontSize: "14px" }}>小計 NT$ {product.price * qty}</span>}
         </div>
       )}
