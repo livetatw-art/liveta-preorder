@@ -383,6 +383,12 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
             </select>
           </div>
         )}
+        {settings.pickupDate && (
+          <div style={{ marginBottom: "14px" }}>
+            <label style={S.label}>取貨日期</label>
+            <div style={{ padding: "11px 14px", background: C.rosePale, border: `1px solid ${C.border}`, borderRadius: "6px", fontFamily: "sans-serif", fontSize: "14px", color: C.ink }}>📅 {settings.pickupDate}</div>
+          </div>
+        )}
         <div style={{ marginBottom: "14px" }}>
           <label style={S.label}>取貨時間</label>
           <select style={S.select} value={form.pickupTime} onChange={e => setForm(v => ({ ...v, pickupTime: e.target.value }))}>
@@ -851,8 +857,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "10px" }}>📅 取貨日期</div>
-              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>由後台設定，客人下單時不會看到，僅顯示於後台訂單中。</div>
-              <input type="date" style={S.input} value={settings.pickupDate || ""} onChange={e => setSettings(v => ({ ...v, pickupDate: e.target.value }))} />
+              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>客人下單頁面會顯示此日期（唯讀）。</div>
+              <input type="text" style={S.input} value={settings.pickupDate || ""} onChange={e => setSettings(v => ({ ...v, pickupDate: e.target.value }))} placeholder="例：6/25（四）" />
               <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
