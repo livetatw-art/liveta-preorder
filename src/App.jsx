@@ -308,7 +308,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
           <div style={{ ...S.card, textAlign: "center", padding: "48px 24px" }}>
             <div style={{ fontSize: "30px", marginBottom: "14px" }}>🌸</div>
             <div style={{ fontSize: "17px", marginBottom: "8px" }}>目前未開放訂購</div>
-            <div style={{ color: C.muted, fontFamily: "sans-serif", fontSize: "13px", lineHeight: "1.9" }}>{openInfo || "請關注我們的 LINE 社群，開單時間將另行公告"}</div>
+            <div style={{ color: C.muted, fontFamily: "sans-serif", fontSize: "13px", lineHeight: "1.9", whiteSpace: "pre-wrap" }}>{openInfo || "請關注我們的 LINE 社群，開單時間將另行公告"}</div>
           </div>
         </div>
       </div>
@@ -322,7 +322,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
         {openInfo && (
           <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: "6px", padding: "14px 16px", marginBottom: "16px" }}>
             <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.rose, letterSpacing: "0.12em", marginBottom: "6px" }}>🗓 本週出攤行程</div>
-            <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "1.8" }}>{openInfo}</div>
+            <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "1.8", whiteSpace: "pre-wrap" }}>{openInfo}</div>
           </div>
         )}
         <div style={{ background: C.rosePale, border: `1px solid ${C.roseMid}`, borderRadius: "6px", padding: "12px 16px", marginBottom: "16px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
@@ -836,24 +836,24 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "14px" }}>📢 訂購頁公告</div>
               <textarea style={{ ...S.input, height: "90px", resize: "vertical" }} value={openInfo||""} onChange={e => setSettings(v=>({...v,openInfo:e.target.value}))} placeholder="例：6/29（六）大安市集　12:00–17:00" />
-              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "6px" }}>🌸 訂購成功提醒</div>
               <textarea style={{ ...S.input, height: "120px", resize: "vertical", lineHeight: "1.8" }} value={successNote||""} onChange={e => setSettings(v=>({...v,successNote:e.target.value}))} placeholder="例：請留意我們的 LINE 通知…" />
-              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "6px" }}>📋 訂購須知</div>
               <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>留空則不顯示。</div>
               <textarea style={{ ...S.input, height: "180px", resize: "vertical", lineHeight: "1.8" }} value={noticeText||""} onChange={e => setSettings(v=>({...v,noticeText:e.target.value}))} placeholder="輸入訂購須知內容…" />
-              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "10px" }}>📅 取貨日期</div>
               <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>由後台設定，客人下單時不會看到，僅顯示於後台訂單中。</div>
               <input type="date" style={S.input} value={settings.pickupDate || ""} onChange={e => setSettings(v => ({ ...v, pickupDate: e.target.value }))} />
-              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => save(() => onSaveSettings(settings))}>儲存</button>
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "14px" }}>⏰ 取貨時段</div>
