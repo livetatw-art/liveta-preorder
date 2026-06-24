@@ -53,18 +53,15 @@ function getGroupStock(stockGroups, groupId) {
 }
 
 function getEffectiveStock(item, stockGroups) {
-  if (item.groupId && stockGroups) {
-    const group = getGroupStock(stockGroups, item.groupId);
-    // 有群組就一定用群組庫存，不看品項自己的 stock
+  if (item.groupId && stockGroups && stockGroups.length > 0) {
+    const group = stockGroups.find(g => String(g.id) === String(item.groupId));
     if (group) {
       const units = item.groupUnits || 1;
-      return Math.floor(group.stock / units);
+      return Math.floor(Number(group.stock) / units);
     }
-    // 有 groupId 但找不到群組（被刪了），視為售完
-    return 0;
   }
-  // 沒有群組才用品項自己的庫存
-  return item.stock;
+  // 沒有群組或找不到群組，用品項自己的庫存
+  return Number(item.stock) || 0;
 }
 
 function Header() {
@@ -916,7 +913,12 @@ export default function App() {
         ]);
         if (pRes.success) setProducts(pRes.products);
         if (gRes.success) setGifts(gRes.gifts);
-        if (sRes.success && sRes.settings && Object.keys(sRes.settings).length > 0) setSettings(s => ({ ...s, ...sRes.settings }));
+        if (sRes.success && sRes.settings && Object.keys(sRes.settings).length > 0) {
+          const s = sRes.settings;
+          // 確保 stockGroups 的 id 和 stock 都是數字
+          if (s.stockGroups) s.stockGroups = s.stockGroups.map(g => ({ ...g, id: Number(g.id), stock: Number(g.stock) }));
+          setSettings(prev => ({ ...prev, ...s }));
+        }
         if (oRes.success) setOrders(oRes.orders || []);
       } catch(e) { console.log("載入失敗", e); }
       setLoading(false);
