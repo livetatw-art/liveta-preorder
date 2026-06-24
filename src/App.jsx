@@ -98,6 +98,7 @@ function ProductCard({ product, qty, onChange, settings }) {
             {hasDiscount && <span style={S.tag(C.red, C.redPale)}>特價</span>}
             <span style={{ color: C.muted, fontSize: "12px", fontFamily: "sans-serif" }}>/ {product.unit}</span>
           </div>
+          {product.desc && <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginTop: "6px", lineHeight: "1.7", whiteSpace: "pre-wrap" }}>{product.desc}</div>}
         </div>
         <div style={S.tag(soldOut ? C.red : C.green, soldOut ? C.redPale : C.greenPale)}>{soldOut ? "售完" : "供應中"}</div>
       </div>
@@ -297,6 +298,20 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
               <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "2", whiteSpace: "pre-line" }}>{successNote}</div>
             </div>
           )}
+          <div style={{ ...S.card, textAlign: "center" }}>
+            <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "14px" }}>追蹤我們，獲得最新消息 🌸</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <a href="https://line.me/R/ti/p/@632olnrv" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", background: "#06c755", borderRadius: "8px", color: "#fff", fontFamily: "sans-serif", fontSize: "14px", textDecoration: "none", fontWeight: "500" }}>
+                💬 點我加入官方帳號
+              </a>
+              <a href="https://www.instagram.com/liveta_tw?igsh=dHB0eHdycDQxdmtw&utm_source=qr" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", background: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", borderRadius: "8px", color: "#fff", fontFamily: "sans-serif", fontSize: "14px", textDecoration: "none", fontWeight: "500" }}>
+                📸 點我加入 Instagram
+              </a>
+              <a href="https://www.threads.com/@liveta_tw?igshid=NTc4MTIwNjQ2YQ==" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", background: "#101010", borderRadius: "8px", color: "#fff", fontFamily: "sans-serif", fontSize: "14px", textDecoration: "none", fontWeight: "500" }}>
+                🧵 更多創業日記 Threads
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -427,7 +442,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
               <div style={S.divider} />
               <label style={{ ...S.label, marginTop: "8px" }}>匯款末 5 碼</label>
               <input style={{ ...S.input, letterSpacing: "0.2em", fontSize: "18px" }} maxLength={5} placeholder="例：83284" value={form.atmLast5} onChange={e => setForm(v => ({ ...v, atmLast5: e.target.value.replace(/\D/g, "") }))} />
-              <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, marginTop: "6px" }}>請於當日 23:59 前完成匯款並填寫末 5 碼</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, marginTop: "6px" }}>送出訂單前轉帳匯款並填寫末 5 碼</div>
             </div>
           )}
         </div>
@@ -695,6 +710,10 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                         <input type={type} style={S.input} value={editProduct[k]??""} onChange={e => setEditProduct(v=>({...v,[k]:(k==="price"||k==="stock"||k==="originalPrice")?(e.target.value===""?null:Number(e.target.value)):e.target.value}))} />
                       </div>
                     ))}
+                    <div style={{ marginBottom: "10px" }}>
+                      <label style={S.label}>品項說明（選填，可換行）</label>
+                      <textarea style={{ ...S.input, height: "80px", resize: "vertical", lineHeight: "1.8" }} value={editProduct.desc || ""} onChange={e => setEditProduct(v => ({ ...v, desc: e.target.value }))} placeholder="例：內含抹茶奶油夾心，建議冷藏保存…" />
+                    </div>
                     {typeToggle(editProduct, setEditProduct)}
                     <div style={{ marginBottom: "12px" }}>
                       <label style={S.label}>庫存群組（選填）</label>
