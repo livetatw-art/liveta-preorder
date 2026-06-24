@@ -736,8 +736,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginRight: "8px" }}>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i === 0) return; const a = [...products]; [a[i-1], a[i]] = [a[i], a[i-1]]; setProducts(a); save(() => onSaveProducts(a)); }}>▲</button>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i === products.length - 1) return; const a = [...products]; [a[i], a[i+1]] = [a[i+1], a[i]]; setProducts(a); save(() => onSaveProducts(a)); }}>▼</button>
+                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i <= 0) return; const a = [...products]; [a[i-1], a[i]] = [a[i], a[i-1]]; setProducts(a); onSaveProducts(a); }}>▲</button>
+                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i >= products.length - 1) return; const a = [...products]; [a[i], a[i+1]] = [a[i+1], a[i]]; setProducts(a); onSaveProducts(a); }}>▼</button>
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type==="drink"?"🧋 飲品":"🍰 甜點"}</div>
