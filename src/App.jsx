@@ -176,6 +176,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
   const [giftCart, setGiftCart] = useState({});
   const [form, setForm] = useState({ name: "", phone: "", pickupLocation: "", pickupTime: "", payment: "", note: "", proofFile: null, atmLast5: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [orderRef, setOrderRef] = useState("");
   const [error, setError] = useState("");
   const [noticeSeen, setNoticeSeen] = useState(false);
@@ -193,8 +194,10 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
   useEffect(() => { if (giftQty === 0) setGiftCart({}); }, [giftQty]);
 
   async function handleSubmit() {
+    if (submitting) return;
     try {
-    if (!form.name.trim()) return setError("請填寫姓名");
+    setSubmitting(true);
+    if (!form.name.trim()) { setSubmitting(false); return setError("請填寫姓名"); }
     if (!form.phone.trim()) return setError("請填寫電話");
     if (pickupLocations && pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
     if (!form.pickupTime) return setError("請選擇取貨時間");
@@ -236,10 +239,12 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
       }
     } catch(e) { console.log("庫存更新失敗", e); }
     onSubmit(orderData);
+    setSubmitting(false);
     setSubmitted(true);
     } catch(err) {
       console.error("送出錯誤:", err);
       setError("送出失敗：" + err.message);
+      setSubmitting(false);
     }
   }
 
@@ -455,7 +460,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
           <textarea style={{ ...S.input, height: "72px", resize: "vertical" }} placeholder="過敏、口味偏好、其他需求…" value={form.note} onChange={e => setForm(v => ({ ...v, note: e.target.value }))} />
         </div>
         {error && <div style={{ padding: "10px 14px", marginBottom: "14px", background: C.redPale, border: "1px solid #e0b0b0", borderRadius: "4px", fontFamily: "sans-serif", fontSize: "13px", color: C.red }}>{error}</div>}
-        <button style={S.btnRose} onClick={handleSubmit}>確認送出訂單</button>
+        <button style={{ ...S.btnRose, opacity: submitting ? 0.6 : 1 }} onClick={handleSubmit} disabled={submitting}>{submitting ? "送出中…" : "確認送出訂單"}</button>
         <p style={{ textAlign: "center", color: C.muted, fontSize: "11px", fontFamily: "sans-serif", marginTop: "12px", letterSpacing: "0.05em" }}>手工製作・限量預購・感謝您的等待</p>
       </div>
     </div>
