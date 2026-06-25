@@ -197,8 +197,8 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     if (submitting) return;
     setSubmitting(true);
     try {
-    if (!form.name.trim()) { setSubmitting(false); return setError("請填寫姓名"); }
-    if (!form.phone.trim()) return setError("請填寫電話");
+    if (!form.name.trim()) { setSubmitting(false); return setError("請填寫貴姓・暱稱"); }
+    if (!form.phone.trim()) return setError("請填寫手機末三碼");
     if (pickupLocations && pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
     if (!form.pickupTime) return setError("請選擇取貨時間");
     if (!form.payment) return setError("請選擇付款方式");
@@ -393,7 +393,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
           <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, letterSpacing: "0.15em", marginBottom: "4px" }}>YOUR INFO</div>
           <div style={{ fontSize: "20px" }}>填寫資料</div>
         </div>
-        {[{ key: "name", label: "姓名", placeholder: "您的姓名" }, { key: "phone", label: "電話", placeholder: "0912-345-678" }].map(f => (
+        {[{ key: "name", label: "貴姓・暱稱", placeholder: "例：王小明 / 小明" }, { key: "phone", label: "手機末三碼", placeholder: "例：678" }].map(f => (
           <div key={f.key} style={{ marginBottom: "14px" }}>
             <label style={S.label}>{f.label}</label>
             <input style={S.input} placeholder={f.placeholder} value={form[f.key]} onChange={e => setForm(v => ({ ...v, [f.key]: e.target.value }))} />
