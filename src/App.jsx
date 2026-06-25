@@ -720,7 +720,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                     {[["name","品項名稱","text"],["price","售價","number"],["originalPrice","原價（選填，填了才顯示劃線原價）","number"],["stock","庫存數量（無群組時使用）","number"],["unit","單位","text"]].map(([k,label,type]) => (
                       <div key={k} style={{ marginBottom: "10px" }}>
                         <label style={S.label}>{label}</label>
-                        <input type={type} style={S.input} value={editProduct[k]??""} onChange={e => setEditProduct(v=>({...v,[k]:(k==="price"||k==="stock"||k==="originalPrice")?(e.target.value===""?null:Number(e.target.value)):e.target.value}))} />
+                        <input type="text" inputMode={type==="number"?"numeric":"text"} style={S.input} value={editProduct[k]??""} onChange={e => setEditProduct(v=>({...v,[k]:e.target.value}))} />
                       </div>
                     ))}
                     <div style={{ marginBottom: "10px" }}>
@@ -742,7 +742,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                       )}
                     </div>
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => save(async () => { const newProds = products.map(x=>x.id===editProduct.id?editProduct:x); setProducts(newProds); await onSaveProducts(newProds); setEditProduct(null); })}>儲存</button>
+                      <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => save(async () => { const ep = {...editProduct, price: Number(editProduct.price)||0, originalPrice: editProduct.originalPrice?Number(editProduct.originalPrice):null, stock: Number(editProduct.stock)||0 }; const newProds = products.map(x=>x.id===ep.id?ep:x); setProducts(newProds); await onSaveProducts(newProds); setEditProduct(null); })}>儲存</button>
                       <button style={S.btnOutline} onClick={() => setEditProduct(null)}>取消</button>
                     </div>
                   </div>
@@ -775,7 +775,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 {[["name","品項名稱","text"],["price","售價","number"],["originalPrice","原價（選填）","number"],["stock","庫存數量","number"],["unit","單位","text"]].map(([k,label,type]) => (
                   <div key={k} style={{ marginBottom: "10px" }}>
                     <label style={S.label}>{label}</label>
-                    <input type={type} style={S.input} value={newProduct[k]??""} onChange={e => setNewProduct(v=>({...v,[k]:e.target.value}))} />
+                    <input type="text" inputMode={type==="number"?"numeric":"text"} style={S.input} value={newProduct[k]??""} onChange={e => setNewProduct(v=>({...v,[k]:e.target.value}))} />
                   </div>
                 ))}
                 {typeToggle(newProduct, setNewProduct)}
