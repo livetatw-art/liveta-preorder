@@ -195,8 +195,8 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
 
   async function handleSubmit() {
     if (submitting) return;
-    try {
     setSubmitting(true);
+    try {
     if (!form.name.trim()) { setSubmitting(false); return setError("請填寫姓名"); }
     if (!form.phone.trim()) return setError("請填寫電話");
     if (pickupLocations && pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
