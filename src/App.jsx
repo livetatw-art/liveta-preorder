@@ -222,27 +222,45 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     setOrderRef(ref);
     const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
     await apiPost(orderData);
-    // 更新群組庫存（靜默執行，不影響送出流程）
+    // 更新庫存（靜默執行，不影響送出流程）
     try {
-      if (settings.stockGroups && settings.stockGroups.length > 0) {
-        const newGroups = [...settings.stockGroups];
-        items.forEach(item => {
-          const product = products.find(p => p.id === item.productId);
-          if (product && product.groupId) {
-            const gi = newGroups.findIndex(g => g.id === product.groupId);
-            if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - item.qty * (product.groupUnits || 1)) };
-          }
-        });
-        giftItems.forEach(gi_item => {
-          const gift = gifts.find(g => g.id === gi_item.id);
-          if (gift && gift.groupId) {
-            const gi = newGroups.findIndex(g => g.id === gift.groupId);
-            if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - gi_item.qty * (gift.groupUnits || 1)) };
-          }
-        });
-        if (onSaveSettings) await onSaveSettings({ ...settings, stockGroups: newGroups });
-      }
-    } catch(e) { console.log("群組庫存更新失敗", e); }
+      const newGroups = [...(settings.stockGroups || [])];
+      const newProducts = [...products];
+      const newGifts = [...gifts];
+
+      items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) return;
+        if (product.groupId) {
+          // 有群組：扣群組庫存
+          const gi = newGroups.findIndex(g => String(g.id) === String(product.groupId));
+          if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - item.qty * (product.groupUnits || 1)) };
+        } else {
+          // 無群組：扣品項自己的庫存
+          const pi = newProducts.findIndex(p => p.id === product.id);
+          if (pi >= 0) newProducts[pi] = { ...newProducts[pi], stock: Math.max(0, newProducts[pi].stock - item.qty) };
+        }
+      });
+
+      giftItems.forEach(gi_item => {
+        const gift = gifts.find(g => g.id === gi_item.id);
+        if (!gift) return;
+        if (gift.groupId) {
+          const gi = newGroups.findIndex(g => String(g.id) === String(gift.groupId));
+          if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - gi_item.qty * (gift.groupUnits || 1)) };
+        } else {
+          const gi = newGifts.findIndex(g => g.id === gift.id);
+          if (gi >= 0) newGifts[gi] = { ...newGifts[gi], stock: Math.max(0, newGifts[gi].stock - gi_item.qty) };
+        }
+      });
+
+      // 儲存群組庫存
+      if (newGroups.length > 0) await onSaveSettings({ ...settings, stockGroups: newGroups });
+      // 儲存品項庫存
+      await apiPost({ action: "saveProducts", products: newProducts });
+      // 儲存贈品庫存
+      await apiPost({ action: "saveGifts", gifts: newGifts });
+    } catch(e) { console.log("庫存更新失敗", e); }
     onSubmit(orderData);
     setSubmitted(true);
     } catch(err) {
@@ -654,9 +672,80 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                     {["待確認","已確認","已完成","已取消"].map(s => (
                       <button key={s} onClick={async () => {
+                        const prevStatus = o.status;
                         const newOrders = orders.map(x => x.ref===o.ref ? {...x,status:s} : x);
                         setOrders(newOrders);
                         await apiPost({ action: "updateOrderStatus", ref: o.ref, status: s });
+                        // 已取消 → 補回庫存
+                        if (s === "已取消" && prevStatus !== "已取消") {
+                          try {
+                            const newGroups = [...(settings.stockGroups || [])];
+                            const newProducts = [...products];
+                            const newGifts = [...gifts];
+                            (o.items || []).forEach(item => {
+                              const product = products.find(p => p.name === item.name);
+                              if (!product) return;
+                              if (product.groupId) {
+                                const gi = newGroups.findIndex(g => String(g.id) === String(product.groupId));
+                                if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: newGroups[gi].stock + item.qty * (product.groupUnits || 1) };
+                              } else {
+                                const pi = newProducts.findIndex(p => p.id === product.id);
+                                if (pi >= 0) newProducts[pi] = { ...newProducts[pi], stock: newProducts[pi].stock + item.qty };
+                              }
+                            });
+                            (o.gifts || []).forEach(gi_item => {
+                              const gift = gifts.find(g => g.name === gi_item.name);
+                              if (!gift) return;
+                              if (gift.groupId) {
+                                const gi = newGroups.findIndex(g => String(g.id) === String(gift.groupId));
+                                if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: newGroups[gi].stock + gi_item.qty * (gift.groupUnits || 1) };
+                              } else {
+                                const gi = newGifts.findIndex(g => g.id === gift.id);
+                                if (gi >= 0) newGifts[gi] = { ...newGifts[gi], stock: newGifts[gi].stock + gi_item.qty };
+                              }
+                            });
+                            if (newGroups.length > 0) await onSaveSettings({ ...settings, stockGroups: newGroups });
+                            await apiPost({ action: "saveProducts", products: newProducts });
+                            await apiPost({ action: "saveGifts", gifts: newGifts });
+                            setProducts(newProducts);
+                            setGifts(newGifts);
+                          } catch(e) { console.log("補回庫存失敗", e); }
+                        }
+                        // 從已取消改回其他狀態 → 重新扣庫存
+                        if (prevStatus === "已取消" && s !== "已取消") {
+                          try {
+                            const newGroups = [...(settings.stockGroups || [])];
+                            const newProducts = [...products];
+                            const newGifts = [...gifts];
+                            (o.items || []).forEach(item => {
+                              const product = products.find(p => p.name === item.name);
+                              if (!product) return;
+                              if (product.groupId) {
+                                const gi = newGroups.findIndex(g => String(g.id) === String(product.groupId));
+                                if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - item.qty * (product.groupUnits || 1)) };
+                              } else {
+                                const pi = newProducts.findIndex(p => p.id === product.id);
+                                if (pi >= 0) newProducts[pi] = { ...newProducts[pi], stock: Math.max(0, newProducts[pi].stock - item.qty) };
+                              }
+                            });
+                            (o.gifts || []).forEach(gi_item => {
+                              const gift = gifts.find(g => g.name === gi_item.name);
+                              if (!gift) return;
+                              if (gift.groupId) {
+                                const gi = newGroups.findIndex(g => String(g.id) === String(gift.groupId));
+                                if (gi >= 0) newGroups[gi] = { ...newGroups[gi], stock: Math.max(0, newGroups[gi].stock - gi_item.qty * (gift.groupUnits || 1)) };
+                              } else {
+                                const gi = newGifts.findIndex(g => g.id === gift.id);
+                                if (gi >= 0) newGifts[gi] = { ...newGifts[gi], stock: Math.max(0, newGifts[gi].stock - gi_item.qty) };
+                              }
+                            });
+                            if (newGroups.length > 0) await onSaveSettings({ ...settings, stockGroups: newGroups });
+                            await apiPost({ action: "saveProducts", products: newProducts });
+                            await apiPost({ action: "saveGifts", gifts: newGifts });
+                            setProducts(newProducts);
+                            setGifts(newGifts);
+                          } catch(e) { console.log("重新扣庫存失敗", e); }
+                        }
                       }} style={{ padding:"4px 8px", border:`1px solid ${o.status===s?C.rose:C.border}`, borderRadius:"3px", background:o.status===s?C.rosePale:"transparent", color:o.status===s?C.rose:C.muted, fontFamily:"sans-serif", fontSize:"11px", cursor:"pointer" }}>{s}</button>
                     ))}
                   </div>
