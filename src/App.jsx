@@ -298,6 +298,12 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
               <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "2", whiteSpace: "pre-line" }}>{successNote}</div>
             </div>
           )}
+          {settings.eatGuide && (
+            <div style={S.card}>
+              <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.rose, letterSpacing: "0.12em", marginBottom: "8px" }}>🍽 食用與保存方式</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "1.9", whiteSpace: "pre-wrap" }}>{settings.eatGuide}</div>
+            </div>
+          )}
           <div style={{ ...S.card, textAlign: "center" }}>
             <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "14px" }}>追蹤我們，獲得最新消息 🌸</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -893,6 +899,12 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
+              <div style={{ fontSize: "15px", marginBottom: "10px" }}>🍽 食用方式與保存方式</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>顯示於訂購完成頁，可換行。</div>
+              <textarea style={{ ...S.input, height: "150px", resize: "vertical", lineHeight: "1.8" }} value={settings.eatGuide || ""} onChange={e => setSettings(v => ({ ...v, eatGuide: e.target.value }))} placeholder="例：&#10;🍽 食用方式：建議於常溫下回溫10分鐘後享用&#10;🧊 保存方式：請冷藏保存，建議2天內食用完畢" />
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
+            </div>
+            <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "10px" }}>📅 取貨日期</div>
               <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>客人下單頁面會顯示此日期（唯讀）。</div>
               <input type="text" style={S.input} value={settings.pickupDate || ""} onChange={e => setSettings(v => ({ ...v, pickupDate: e.target.value }))} placeholder="例：6/25（四）" />
@@ -936,7 +948,7 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [gifts, setGifts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", brandFeature: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [], stockGroups: [] });
+  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", brandFeature: "", eatGuide: "", storeGuide: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [], stockGroups: [] });
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("order");
   const [pw, setPw] = useState(""); const [pwErr, setPwErr] = useState(false);
