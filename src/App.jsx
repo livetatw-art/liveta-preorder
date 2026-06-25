@@ -508,7 +508,7 @@ function GroupsTab({ settings, setSettings, onSaveSettings, products, gifts }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <input type="number" style={{ ...S.input, width: "80px", padding: "6px 10px" }} value={g.stock}
+              <input type="text" inputMode="numeric" style={{ ...S.input, width: "80px", padding: "6px 10px" }} onFocus={e => { if(e.target.value==="0") e.target.value=""; }} value={g.stock}
                 onChange={e => { const newGroups = stockGroups.map(x => x.id === g.id ? { ...x, stock: Number(e.target.value) } : x); save(newGroups); }} />
               <button style={{ ...S.btnOutline, borderColor: C.red, color: C.red, padding: "6px 10px" }}
                 onClick={() => save(stockGroups.filter(x => x.id !== g.id))}>刪除</button>
@@ -529,7 +529,7 @@ function GroupsTab({ settings, setSettings, onSaveSettings, products, gifts }) {
           </div>
           <div style={{ marginBottom: "12px" }}>
             <label style={S.label}>總庫存數量</label>
-            <input type="number" style={S.input} value={newGroup.stock} onChange={e => setNewGroup(v => ({ ...v, stock: e.target.value }))} placeholder="例：100" />
+            <input type="text" inputMode="numeric" style={S.input} value={newGroup.stock} onFocus={e => { if(e.target.value==="0") e.target.value=""; }} onChange={e => setNewGroup(v => ({ ...v, stock: e.target.value }))} placeholder="例：100" />
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button style={{ ...S.btnRose, width: "auto", padding: "8px 20px" }} onClick={() => {
@@ -737,7 +737,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                       {editProduct.groupId && (
                         <div style={{ marginTop: "8px" }}>
                           <label style={S.label}>此品項消耗幾顆群組庫存</label>
-                          <input type="number" style={S.input} value={editProduct.groupUnits || 1} onChange={e => setEditProduct(v => ({ ...v, groupUnits: Number(e.target.value) }))} />
+                          <input type="text" inputMode="numeric" style={S.input} value={editProduct.groupUnits || ""} onFocus={e => { if(e.target.value==="0"||e.target.value==="1") e.target.select(); }} onChange={e => setEditProduct(v => ({ ...v, groupUnits: e.target.value }))} />
                         </div>
                       )}
                     </div>
@@ -821,7 +821,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                       {editGift.groupId && (
                         <div style={{ marginTop: "8px" }}>
                           <label style={S.label}>此贈品消耗幾顆群組庫存</label>
-                          <input type="number" style={S.input} value={editGift.groupUnits || 1} onChange={e => setEditGift(v => ({ ...v, groupUnits: Number(e.target.value) }))} />
+                          <input type="text" inputMode="numeric" style={S.input} value={editGift.groupUnits || ""} onFocus={e => { if(e.target.value==="0"||e.target.value==="1") e.target.select(); }} onChange={e => setEditGift(v => ({ ...v, groupUnits: e.target.value }))} />
                         </div>
                       )}
                     </div>
