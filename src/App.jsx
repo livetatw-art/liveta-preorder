@@ -341,6 +341,12 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
             <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "1.8", whiteSpace: "pre-wrap" }}>{openInfo}</div>
           </div>
         )}
+        {settings.brandFeature && (
+          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: "6px", padding: "14px 16px", marginBottom: "16px" }}>
+            <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.rose, letterSpacing: "0.12em", marginBottom: "6px" }}>✨ 品牌特色</div>
+            <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "1.9", whiteSpace: "pre-wrap" }}>{settings.brandFeature}</div>
+          </div>
+        )}
         <div style={{ background: C.rosePale, border: `1px solid ${C.roseMid}`, borderRadius: "6px", padding: "12px 16px", marginBottom: "16px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
           <span style={{ fontSize: "18px", flexShrink: 0 }}>🎂</span>
           <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.ink, lineHeight: "1.8" }}>
@@ -881,6 +887,12 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
               <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
             </div>
             <div style={S.card}>
+              <div style={{ fontSize: "15px", marginBottom: "10px" }}>✨ 品牌特色</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>顯示於首頁，可換行。</div>
+              <textarea style={{ ...S.input, height: "120px", resize: "vertical", lineHeight: "1.8" }} value={settings.brandFeature || ""} onChange={e => setSettings(v => ({ ...v, brandFeature: e.target.value }))} placeholder="例：🍰 每週限量手工製作&#10;🌸 使用天然食材，無添加防腐劑&#10;💝 每份甜點都是用心製作" />
+              <button style={{ ...S.btnRose, marginTop: "10px" }} onClick={() => { setSettings(v => { const ns={...v}; save(()=>onSaveSettings(ns)); return ns; }); }}>儲存</button>
+            </div>
+            <div style={S.card}>
               <div style={{ fontSize: "15px", marginBottom: "10px" }}>📅 取貨日期</div>
               <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.muted, marginBottom: "10px" }}>客人下單頁面會顯示此日期（唯讀）。</div>
               <input type="text" style={S.input} value={settings.pickupDate || ""} onChange={e => setSettings(v => ({ ...v, pickupDate: e.target.value }))} placeholder="例：6/25（四）" />
@@ -924,7 +936,7 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [gifts, setGifts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [], stockGroups: [] });
+  const [settings, setSettings] = useState({ isOpen: false, openInfo: "", noticeText: "", successNote: "", brandFeature: "", pickupSlots: ["16:00","16:30","17:00","17:30"], pickupLocations: [], stockGroups: [] });
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("order");
   const [pw, setPw] = useState(""); const [pwErr, setPwErr] = useState(false);
