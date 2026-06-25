@@ -646,29 +646,33 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                     {["待確認","已確認","已完成","已取消"].map(s => (
                       <button key={s} onClick={async () => {
-                        const prevStatus = o.status;
+                        const prevStatus = (o.status || "").trim();
                         const newOrders = orders.map(x => x.ref===o.ref ? {...x,status:s} : x);
                         setOrders(newOrders);
                         await apiPost({ action: "updateOrderStatus", ref: o.ref, status: s });
                         // 已取消 → 補回庫存
                         if (s === "已取消" && prevStatus !== "已取消") {
                           try {
-                            await apiPost({ action: "restoreStock", items: o.items || [], gifts: o.gifts || [] });
+                            const restoreItems = (o.items || []).map(i => ({ name: i.name, qty: Number(i.qty), productId: i.productId || null }));
+                            const restoreGifts = (o.gifts || []).map(g => ({ name: g.name, qty: Number(g.qty), id: g.id || null }));
+                            await apiPost({ action: "restoreStock", items: restoreItems, gifts: restoreGifts });
                             const [pRes, gRes, sRes] = await Promise.all([apiGet("getProducts"), apiGet("getGifts"), apiGet("getSettings")]);
                             if (pRes.success) setProducts(pRes.products);
                             if (gRes.success) setGifts(gRes.gifts);
                             if (sRes.success && sRes.settings) { const s2 = sRes.settings; if (s2.stockGroups) s2.stockGroups = s2.stockGroups.map(g => ({...g, id: Number(g.id), stock: Number(g.stock)})); setSettings(prev => ({...prev, ...s2})); }
-                          } catch(e) { console.log("補回庫存失敗", e); }
+                          } catch(e) { alert("補回庫存失敗：" + e.message); }
                         }
                         // 從已取消改回其他狀態 → 重新扣庫存
                         if (prevStatus === "已取消" && s !== "已取消") {
                           try {
-                            await apiPost({ action: "deductStock", items: o.items || [], gifts: o.gifts || [] });
+                            const deductItems = (o.items || []).map(i => ({ name: i.name, qty: Number(i.qty), productId: i.productId || null }));
+                            const deductGifts = (o.gifts || []).map(g => ({ name: g.name, qty: Number(g.qty), id: g.id || null }));
+                            await apiPost({ action: "deductStock", items: deductItems, gifts: deductGifts });
                             const [pRes, gRes, sRes] = await Promise.all([apiGet("getProducts"), apiGet("getGifts"), apiGet("getSettings")]);
                             if (pRes.success) setProducts(pRes.products);
                             if (gRes.success) setGifts(gRes.gifts);
                             if (sRes.success && sRes.settings) { const s2 = sRes.settings; if (s2.stockGroups) s2.stockGroups = s2.stockGroups.map(g => ({...g, id: Number(g.id), stock: Number(g.stock)})); setSettings(prev => ({...prev, ...s2})); }
-                          } catch(e) { console.log("重新扣庫存失敗", e); }
+                          } catch(e) { alert("扣庫存失敗：" + e.message); }
                         }
                                             }} style={{ padding:"4px 8px", border:`1px solid ${o.status===s?C.rose:C.border}`, borderRadius:"3px", background:o.status===s?C.rosePale:"transparent", color:o.status===s?C.rose:C.muted, fontFamily:"sans-serif", fontSize:"11px", cursor:"pointer" }}>{s}</button>
                     ))}
