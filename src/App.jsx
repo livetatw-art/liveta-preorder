@@ -203,12 +203,12 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     if (form.payment === "atm" && form.atmLast5.trim().length !== 5) return setError("請填寫匯款末 5 碼");
     if (!hasItems) return setError("請至少選擇一項商品");
     const availableGifts = gifts.filter(g => {
-    if (g.groupId && stockGroups) {
-      const group = stockGroups.find(gr => gr.id === g.groupId);
-      if (group) return group.stock > 0;
-    }
-    return g.stock > 0;
-  });
+      if (g.groupId && settings.stockGroups) {
+        const group = settings.stockGroups.find(gr => String(gr.id) === String(g.groupId));
+        if (group) return group.stock > 0;
+      }
+      return g.stock > 0;
+    });
     const chosenTotal = Object.values(giftCart).reduce((s, q) => s + q, 0);
     if (giftQty > 0 && availableGifts.length > 0 && chosenTotal < giftQty) return setError(`請選擇 ${giftQty} 份贈品（還差 ${giftQty - chosenTotal} 份）`);
     setError("");
