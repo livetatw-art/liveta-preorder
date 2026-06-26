@@ -598,7 +598,13 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {saving && <span style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted }}>儲存中…</span>}
           <span style={{ fontFamily: "sans-serif", fontSize: "12px", color: isOpen ? "#a8d8a8" : C.muted }}>{isOpen ? "🟢 開單中" : "🔴 未開單"}</span>
-          <button onClick={() => save(() => onSaveSettings({ ...settings, isOpen: !isOpen }))}
+          <button onClick={() => {
+              const now = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
+              const newSettings = isOpen
+                ? { ...settings, isOpen: false, lastCloseTime: now }
+                : { ...settings, isOpen: true, lastOpenTime: now, lastCloseTime: "" };
+              save(() => onSaveSettings(newSettings));
+            }}
             style={{ background: isOpen ? C.red : C.green, color: C.white, border: "none", borderRadius: "4px", padding: "8px 14px", fontFamily: "sans-serif", fontSize: "12px", cursor: "pointer" }}>
             {isOpen ? "關閉訂單" : "開放訂單"}
           </button>
@@ -688,50 +694,86 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
           </>
         )}
 
-        {tab === "stats" && (
-          <>
-            <div style={{ ...S.card }}>
-              <div style={{ fontSize: "15px", marginBottom: "16px" }}>🍰 品項統計</div>
-              {(() => {
-                const countMap = {};
-                orders.filter(o => o.status !== "已取消").forEach(o => {
-                  (o.items || []).forEach(i => {
-                    countMap[i.name] = (countMap[i.name] || 0) + i.qty;
-                  });
-                });
-                const entries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
-                return entries.length === 0
-                  ? <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>尚無訂單資料</div>
-                  : entries.map(([name, qty]) => (
-                    <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                      <span style={{ fontFamily: "sans-serif", fontSize: "14px" }}>{name}</span>
-                      <span style={{ fontFamily: "sans-serif", fontSize: "16px", color: C.rose, fontWeight: "600" }}>{qty}</span>
-                    </div>
-                  ));
-              })()}
-            </div>
-            <div style={{ ...S.card }}>
-              <div style={{ fontSize: "15px", marginBottom: "16px" }}>🎁 贈品統計</div>
-              {(() => {
-                const giftMap = {};
-                orders.filter(o => o.status !== "已取消").forEach(o => {
-                  (o.gifts || []).forEach(g => {
-                    giftMap[g.name] = (giftMap[g.name] || 0) + g.qty;
-                  });
-                });
-                const entries = Object.entries(giftMap).sort((a, b) => b[1] - a[1]);
-                return entries.length === 0
-                  ? <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>尚無贈品資料</div>
-                  : entries.map(([name, qty]) => (
-                    <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                      <span style={{ fontFamily: "sans-serif", fontSize: "14px" }}>{name}</span>
-                      <span style={{ fontFamily: "sans-serif", fontSize: "16px", color: C.amber, fontWeight: "600" }}>{qty}</span>
-                    </div>
-                  ));
-              })()}
-            </div>
-          </>
-        )}
+        {tab === "stats" && (() => {
+          // 解析訂單時間
+          const parseDate = (str) => {
+            if (!str) return null;
+            try { return new Date(str); } catch { return null; }
+          };
+          const now = new Date();
+          const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          // 本次開單區間
+          const openTime = settings.lastOpenTime ? new Date(parseDate(settings.lastOpenTime)) : null;
+          const closeTime = settings.lastCloseTime ? new Date(parseDate(settings.lastCloseTime)) : null;
+
+          const filterOrders = (filterFn) => orders.filter(o => o.status !== "已取消" && filterFn(o));
+
+          const thisSession = filterOrders(o => {
+            if (!openTime) return false;
+            const t = parseDate(o.createdAt);
+            if (!t) return false;
+            if (closeTime && closeTime > openTime) return t >= openTime && t <= closeTime;
+            return t >= openTime;
+          });
+          const thisWeek = filterOrders(o => { const t = parseDate(o.createdAt); return t && t >= startOfWeek; });
+          const thisMonth = filterOrders(o => { const t = parseDate(o.createdAt); return t && t >= startOfMonth; });
+
+          const calcStats = (list) => {
+            const items = {}; const gifts = {};
+            list.forEach(o => {
+              (o.items || []).forEach(i => { items[i.name] = (items[i.name] || 0) + i.qty; });
+              (o.gifts || []).forEach(g => { gifts[g.name] = (gifts[g.name] || 0) + g.qty; });
+            });
+            return { items: Object.entries(items).sort((a,b) => b[1]-a[1]), gifts: Object.entries(gifts).sort((a,b) => b[1]-a[1]) };
+          };
+
+          const StatBlock = ({ title, subtitle, list }) => {
+            const { items, gifts } = calcStats(list);
+            return (
+              <div style={{ ...S.card, marginBottom: "12px" }}>
+                <div style={{ fontSize: "15px", marginBottom: "4px" }}>{title}</div>
+                {subtitle && <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, marginBottom: "12px" }}>{subtitle}</div>}
+                {items.length === 0 && gifts.length === 0
+                  ? <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>尚無資料</div>
+                  : <>
+                    {items.length > 0 && <>
+                      <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.rose, marginBottom: "6px", letterSpacing: "0.1em" }}>🍰 品項</div>
+                      {items.map(([name, qty]) => (
+                        <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                          <span style={{ fontFamily: "sans-serif", fontSize: "14px" }}>{name}</span>
+                          <span style={{ fontFamily: "sans-serif", fontSize: "15px", color: C.rose, fontWeight: "600" }}>{qty}</span>
+                        </div>
+                      ))}
+                    </>}
+                    {gifts.length > 0 && <>
+                      <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.amber, marginBottom: "6px", marginTop: items.length > 0 ? "12px" : "0", letterSpacing: "0.1em" }}>🎁 贈品</div>
+                      {gifts.map(([name, qty]) => (
+                        <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                          <span style={{ fontFamily: "sans-serif", fontSize: "14px" }}>{name}</span>
+                          <span style={{ fontFamily: "sans-serif", fontSize: "15px", color: C.amber, fontWeight: "600" }}>{qty}</span>
+                        </div>
+                      ))}
+                    </>}
+                  </>
+                }
+              </div>
+            );
+          };
+
+          return (
+            <>
+              <StatBlock
+                title="📦 本次開單"
+                subtitle={openTime ? `開單：${settings.lastOpenTime}${settings.lastCloseTime ? `　關單：${settings.lastCloseTime}` : "　（開單中）"}` : "尚未有開單記錄"}
+                list={thisSession}
+              />
+              <StatBlock title="📅 本週" subtitle={`${startOfWeek.getMonth()+1}/${startOfWeek.getDate()} 起`} list={thisWeek} />
+              <StatBlock title="🗓 本月" subtitle={`${now.getFullYear()}/${now.getMonth()+1}`} list={thisMonth} />
+            </>
+          );
+        })()}
 
         {tab === "products" && (
           <>
