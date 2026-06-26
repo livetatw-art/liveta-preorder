@@ -223,7 +223,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     }
     const ref = "LV" + Date.now().toString().slice(-6);
     setOrderRef(ref);
-    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
+    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
     await apiPost(orderData);
     // 更新庫存（靜默執行，不影響送出流程）
     try {
@@ -637,7 +637,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   <span style={S.tag(statusColors[o.status]?.c||C.muted, statusColors[o.status]?.bg||C.border)}>{o.status||"待確認"}</span>
                 </div>
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "8px", lineHeight: "1.8" }}>
-                  {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}{settings.pickupDate && <span>📅 {settings.pickupDate}　</span>}⏰ {typeof o.pickupTime === "string" ? (o.pickupTime.includes("1899") ? o.pickupTime.match(/(\d{2}:\d{2})/) ? o.pickupTime.match(/(\d{2}:\d{2})/)[1] : "" : o.pickupTime) : ""}　💳 {payLabel(o.payment)}
+                  {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}{(o.pickupDate || settings.pickupDate) && <span>📅 {o.pickupDate || settings.pickupDate}　</span>}⏰ {typeof o.pickupTime === "string" ? (o.pickupTime.includes("1899") ? o.pickupTime.match(/(\d{2}:\d{2})/) ? o.pickupTime.match(/(\d{2}:\d{2})/)[1] : "" : o.pickupTime) : ""}　💳 {payLabel(o.payment)}
                   {o.payment === "atm" && o.atmLast5 && <span style={{ color: C.ink }}>　末5碼：{o.atmLast5}</span>}
                   {o.payment === "line_pay" && !o.proofImage && <span style={{ color: C.red }}>　⚠未截圖</span>}
                 </div>
