@@ -637,7 +637,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   <span style={S.tag(statusColors[o.status]?.c||C.muted, statusColors[o.status]?.bg||C.border)}>{o.status||"待確認"}</span>
                 </div>
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "8px", lineHeight: "1.8" }}>
-                  {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}{(o.pickupDate || settings.pickupDate) && <span>📅 {o.pickupDate || settings.pickupDate}　</span>}⏰ {typeof o.pickupTime === "string" ? (o.pickupTime.includes("1899") ? o.pickupTime.match(/(\d{2}:\d{2})/) ? o.pickupTime.match(/(\d{2}:\d{2})/)[1] : "" : o.pickupTime) : ""}　💳 {payLabel(o.payment)}
+                  {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}{o.pickupDate && <span>📅 {o.pickupDate}　</span>}⏰ {typeof o.pickupTime === "string" ? (o.pickupTime.includes("1899") ? o.pickupTime.match(/(\d{2}:\d{2})/) ? o.pickupTime.match(/(\d{2}:\d{2})/)[1] : "" : o.pickupTime) : ""}　💳 {payLabel(o.payment)}
                   {o.payment === "atm" && o.atmLast5 && <span style={{ color: C.ink }}>　末5碼：{o.atmLast5}</span>}
                   {o.payment === "line_pay" && !o.proofImage && <span style={{ color: C.red }}>　⚠未截圖</span>}
                 </div>
@@ -777,6 +777,9 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
 
         {tab === "products" && (
           <>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+              <button style={{ ...S.btnOutline, fontSize: "12px", padding: "6px 14px" }} onClick={() => save(() => onSaveProducts(products))}>💾 儲存排列順序</button>
+            </div>
             {products.map(p => (
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
@@ -813,8 +816,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginRight: "8px" }}>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i <= 0) return; const a = [...products]; [a[i-1], a[i]] = [a[i], a[i-1]]; setProducts(a); clearTimeout(moveTimer.current); moveTimer.current = setTimeout(() => onSaveProducts(a), 600); }}>▲</button>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i >= products.length - 1) return; const a = [...products]; [a[i], a[i+1]] = [a[i+1], a[i]]; setProducts(a); clearTimeout(moveTimer.current); moveTimer.current = setTimeout(() => onSaveProducts(a), 600); }}>▼</button>
+                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i <= 0) return; const a = [...products]; [a[i-1], a[i]] = [a[i], a[i-1]]; setProducts(a); }}>▲</button>
+                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i >= products.length - 1) return; const a = [...products]; [a[i], a[i+1]] = [a[i+1], a[i]]; setProducts(a); }}>▼</button>
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type==="drink"?"🧋 飲品":"🍰 甜點"}</div>
