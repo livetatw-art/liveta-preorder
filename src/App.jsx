@@ -599,7 +599,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
           {saving && <span style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted }}>儲存中…</span>}
           <span style={{ fontFamily: "sans-serif", fontSize: "12px", color: isOpen ? "#a8d8a8" : C.muted }}>{isOpen ? "🟢 開單中" : "🔴 未開單"}</span>
           <button onClick={() => {
-              const now = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
+              const now = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei", year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
               const newSettings = isOpen
                 ? { ...settings, isOpen: false, lastCloseTime: now }
                 : { ...settings, isOpen: true, lastOpenTime: now, lastCloseTime: "" };
@@ -695,18 +695,27 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         )}
 
         {tab === "stats" && (() => {
-          // 解析訂單時間
+          // 解析訂單時間（支援台灣時間字串和 ISO 格式）
           const parseDate = (str) => {
             if (!str) return null;
-            try { return new Date(str); } catch { return null; }
+            try {
+              // 台灣時間格式：2026/6/29 上午11:14 或 2026/6/29 下午3:14
+              const twMatch = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)(\d{1,2}):(\d{2})/);
+              if (twMatch) {
+                let [, y, mo, d, ampm, h, mi] = twMatch;
+                h = Number(h); if (ampm === "下午" && h !== 12) h += 12; if (ampm === "上午" && h === 12) h = 0;
+                return new Date(Number(y), Number(mo)-1, Number(d), h, Number(mi));
+              }
+              return new Date(str);
+            } catch { return null; }
           };
           const now = new Date();
           const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
           // 本次開單區間
-          const openTime = settings.lastOpenTime ? new Date(parseDate(settings.lastOpenTime)) : null;
-          const closeTime = settings.lastCloseTime ? new Date(parseDate(settings.lastCloseTime)) : null;
+          const openTime = settings.lastOpenTime ? parseDate(settings.lastOpenTime) : null;
+          const closeTime = settings.lastCloseTime ? parseDate(settings.lastCloseTime) : null;
 
           const filterOrders = (filterFn) => orders.filter(o => o.status !== "已取消" && filterFn(o));
 
