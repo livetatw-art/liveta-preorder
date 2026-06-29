@@ -219,7 +219,24 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     const giftItems = Object.entries(giftCart).filter(([, q]) => q > 0).map(([id, qty]) => { const g = gifts.find(g => g.id === Number(id)); return { id: g.id, name: g.name, qty }; });
     let proofImage = null;
     if (form.proofFile) {
-      proofImage = await new Promise(resolve => { const r = new FileReader(); r.onload = e => resolve(e.target.result); r.readAsDataURL(form.proofFile); });
+      // 先把圖片壓縮再上傳
+      const base64 = await new Promise(resolve => {
+        const r = new FileReader(); r.onload = e => resolve(e.target.result); r.readAsDataURL(form.proofFile);
+      });
+      // 壓縮圖片
+      const compressedBase64 = await new Promise(resolve => {
+        const img = new Image(); img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxW = 800; const scale = Math.min(1, maxW / img.width);
+          canvas.width = img.width * scale; canvas.height = img.height * scale;
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        }; img.src = base64;
+      });
+      // 上傳到 Google Drive
+      const uploadRes = await apiPost({ action: "saveProofImage", imageData: compressedBase64, ref });
+      if (uploadRes.success) { proofImage = uploadRes.url; }
+      else { proofImage = compressedBase64; } // fallback 用 base64
     }
     const ref = "LV" + Date.now().toString().slice(-6);
     setOrderRef(ref);
