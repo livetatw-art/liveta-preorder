@@ -202,7 +202,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     if (pickupLocations && pickupLocations.length > 0 && !form.pickupLocation) return setError("請選擇取貨地點");
     if (!form.pickupTime) return setError("請選擇取貨時間");
     if (!form.payment) return setError("請選擇付款方式");
-    if (form.payment === "line_pay" && !form.proofFile) return setError("請上傳 LINE Pay 付款截圖");
+    if (form.payment === "line_pay" && (!form.linePayCode || form.linePayCode.trim().length < 5)) return setError("請填寫 LINE Pay 驗證碼（5碼英數字）");
     if (form.payment === "atm" && form.atmLast5.trim().length !== 5) return setError("請填寫匯款末 5 碼");
     if (!hasItems) return setError("請至少選擇一項商品");
     const availableGifts = gifts.filter(g => {
@@ -217,30 +217,8 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     setError("");
     const items = Object.entries(cart).filter(([, q]) => q > 0).map(([id, qty]) => { const p = products.find(p => p.id === Number(id)); return { productId: p.id, name: p.name, type: p.type, qty, price: p.price }; });
     const giftItems = Object.entries(giftCart).filter(([, q]) => q > 0).map(([id, qty]) => { const g = gifts.find(g => g.id === Number(id)); return { id: g.id, name: g.name, qty }; });
-    let proofImage = null;
-    if (form.proofFile) {
-      // 先把圖片壓縮再上傳
-      const base64 = await new Promise(resolve => {
-        const r = new FileReader(); r.onload = e => resolve(e.target.result); r.readAsDataURL(form.proofFile);
-      });
-      // 壓縮圖片
-      const compressedBase64 = await new Promise(resolve => {
-        const img = new Image(); img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const maxW = 800; const scale = Math.min(1, maxW / img.width);
-          canvas.width = img.width * scale; canvas.height = img.height * scale;
-          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.7));
-        }; img.src = base64;
-      });
-      // 上傳到 Google Drive
-      const uploadRes = await apiPost({ action: "saveProofImage", imageData: compressedBase64, ref });
-      if (uploadRes.success) { proofImage = uploadRes.url; }
-      else { proofImage = compressedBase64; } // fallback 用 base64
-    }
-    const ref = "LV" + Date.now().toString().slice(-6);
-    setOrderRef(ref);
-    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
+    const proofImage = form.payment === "line_pay" ? form.linePayCode.trim() : null;
+        const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
     await apiPost(orderData);
     // 更新庫存（靜默執行，不影響送出流程）
     try {
@@ -299,7 +277,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
             <div style={{ color: C.muted, fontFamily: "sans-serif", fontSize: "13px", marginBottom: "20px" }}>訂單編號 {orderRef}</div>
             <div style={S.divider} />
             <div style={{ fontFamily: "sans-serif", fontSize: "13px", lineHeight: "1.9", textAlign: "left", color: C.muted }}>
-              {form.payment === "line_pay" && <div>💚 已收到 LINE Pay 截圖，確認後將通知您</div>}
+              {form.payment === "line_pay" && <div>💚 LINE Pay 驗證碼已收到，確認後將通知您</div>}
               {form.payment === "atm" && <div>🏦 已收到匯款末 5 碼：{form.atmLast5}，核對後將通知您</div>}
               {form.payment === "cash_on_pickup" && <div>💵 當天取貨時以現金或 LINE Pay 付款，謝謝您</div>}
               {giftItems.length > 0 && <div style={{ marginTop: "8px", color: C.amber }}>🎁 贈品：{giftItems.map(g => `${g.name} × ${g.qty}`).join("、")}</div>}
@@ -455,10 +433,9 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
           </div>
           {form.payment === "line_pay" && (
             <div style={{ marginTop: "10px", padding: "14px", background: "#f0faf0", border: "1px solid #a8dab0", borderRadius: "6px" }}>
-              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.green, marginBottom: "8px" }}>✦ 上傳付款截圖</div>
-              <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => setForm(v => ({ ...v, proofFile: e.target.files[0] }))} />
-              <button onClick={() => fileRef.current.click()} style={{ ...S.btnOutline, borderColor: C.green, color: C.green }}>{form.proofFile ? `✓ ${form.proofFile.name}` : "選擇截圖"}</button>
-              <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, marginTop: "6px" }}>付款完成後請上傳截圖以利核對</div>
+              <div style={{ fontFamily: "sans-serif", fontSize: "12px", color: C.green, marginBottom: "8px" }}>✦ 付款驗證碼</div>
+              <input type="text" style={{ ...S.input, letterSpacing: "0.15em" }} maxLength={5} value={form.linePayCode || ""} onChange={e => setForm(v => ({ ...v, linePayCode: e.target.value.toUpperCase() }))} placeholder="例：A1B2C" />
+              <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.muted, marginTop: "6px" }}>付款完成後請提供驗證碼（共5碼）以利核對，驗證碼為付款成功後英文＋數字共5碼</div>
             </div>
           )}
           {form.payment === "atm" && (
@@ -656,12 +633,12 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted, marginBottom: "8px", lineHeight: "1.8" }}>
                   {o.pickupLocation && <span>📍 {o.pickupLocation}　</span>}{o.pickupDate && <span>📅 {o.pickupDate}　</span>}⏰ {typeof o.pickupTime === "string" ? (o.pickupTime.includes("1899") ? o.pickupTime.match(/(\d{2}:\d{2})/) ? o.pickupTime.match(/(\d{2}:\d{2})/)[1] : "" : o.pickupTime) : ""}　💳 {payLabel(o.payment)}
                   {o.payment === "atm" && o.atmLast5 && <span style={{ color: C.ink }}>　末5碼：{o.atmLast5}</span>}
-                  {o.payment === "line_pay" && !o.proofImage && <span style={{ color: C.red }}>　⚠未截圖</span>}
+                  {o.payment === "line_pay" && !o.proofImage && <span style={{ color: C.red }}>　⚠未填驗證碼</span>}
                 </div>
                 {o.proofImage && (
                   <div style={{ marginBottom: "10px" }}>
-                    <div style={{ fontFamily: "sans-serif", fontSize: "11px", color: C.green, marginBottom: "6px" }}>💚 LINE Pay 付款截圖</div>
-                    <img src={o.proofImage} alt="付款截圖" style={{ maxWidth: "100%", maxHeight: "240px", objectFit: "contain", borderRadius: "6px", border: `1px solid ${C.border}`, display: "block" }} />
+                    <span style={{ color: C.green }}>💚 LINE Pay 驗證碼：</span>
+                    <span style={{ fontWeight: "600", letterSpacing: "0.1em" }}>{o.proofImage}</span>
                   </div>
                 )}
                 <div style={{ fontFamily: "sans-serif", fontSize: "13px", marginBottom: "4px" }}>
