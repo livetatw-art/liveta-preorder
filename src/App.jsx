@@ -235,6 +235,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
       }
     } catch(e) { console.log("庫存更新失敗", e); }
     onSubmit(orderData);
+    setOrderRef(ref);
     setSubmitting(false);
     setSubmitted(true);
     } catch(err) {
