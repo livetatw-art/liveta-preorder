@@ -218,7 +218,8 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     const items = Object.entries(cart).filter(([, q]) => q > 0).map(([id, qty]) => { const p = products.find(p => p.id === Number(id)); return { productId: p.id, name: p.name, type: p.type, qty, price: p.price }; });
     const giftItems = Object.entries(giftCart).filter(([, q]) => q > 0).map(([id, qty]) => { const g = gifts.find(g => g.id === Number(id)); return { id: g.id, name: g.name, qty }; });
     const proofImage = form.payment === "line_pay" ? form.linePayCode.trim() : null;
-        const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
+    const ref = "LV" + Math.floor(100000 + Math.random() * 900000);
+    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
     await apiPost(orderData);
     // 更新庫存（靜默執行，不影響送出流程）
     try {
