@@ -703,6 +703,12 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 h = Number(h); if (ampm === "下午" && h !== 12) h += 12; if (ampm === "上午" && h === 12) h = 0;
                 return new Date(Number(y), Number(mo)-1, Number(d), h, Number(mi));
               }
+              // yyyy/MM/dd HH:mm 格式
+              const isoMatch = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+              if (isoMatch) {
+                let [, y, mo, d, h, mi] = isoMatch;
+                return new Date(Number(y), Number(mo)-1, Number(d), Number(h), Number(mi));
+              }
               return new Date(str);
             } catch { return null; }
           };
