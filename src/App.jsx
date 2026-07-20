@@ -218,16 +218,15 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
     const items = Object.entries(cart).filter(([, q]) => q > 0).map(([id, qty]) => { const p = products.find(p => p.id === Number(id)); return { productId: p.id, name: p.name, type: p.type, qty, price: p.price }; });
     const giftItems = Object.entries(giftCart).filter(([, q]) => q > 0).map(([id, qty]) => { const g = gifts.find(g => g.id === Number(id)); return { id: g.id, name: g.name, qty }; });
     const proofImage = form.payment === "line_pay" ? form.linePayCode.trim() : null;
-    const ref = "LV" + Math.floor(100000 + Math.random() * 900000);
-    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref };
+    const orderNo = "LV" + Math.floor(100000 + Math.random() * 900000);
+    const orderData = { action: "saveOrder", name: form.name, phone: form.phone, pickupLocation: form.pickupLocation, pickupDate: settings.pickupDate || "", pickupTime: form.pickupTime, payment: form.payment, note: form.note, atmLast5: form.atmLast5, proofImage, items, gifts: giftItems, total, ref: orderNo };
     await apiPost(orderData);
     // 更新庫存（靜默執行，不影響送出流程）
     try {
       await apiPost({ action: "deductStock", items, gifts: giftItems });
-      // 重新拉最新庫存
       const [pRes, gRes, sRes] = await Promise.all([apiGet("getProducts"), apiGet("getGifts"), apiGet("getSettings")]);
-      if (pRes.success) setProducts(pRes.products);
-      if (gRes.success) setGifts(gRes.gifts);
+      if (pRes.success) setProducts(prev => prev.map(p => { const fresh = pRes.products.find(x => x.id === p.id); return fresh ? {...p, stock: fresh.stock} : p; }));
+      if (gRes.success) setGifts(prev => prev.map(g => { const fresh = gRes.gifts.find(x => x.id === g.id); return fresh ? {...g, stock: fresh.stock} : g; }));
       if (sRes.success && sRes.settings) {
         const s = sRes.settings;
         if (s.stockGroups) s.stockGroups = s.stockGroups.map(g => ({ ...g, id: Number(g.id), stock: Number(g.stock) }));
@@ -235,7 +234,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
       }
     } catch(e) { console.log("庫存更新失敗", e); }
     onSubmit(orderData);
-    setOrderRef(ref);
+    setOrderRef(orderNo);
     setSubmitting(false);
     setSubmitted(true);
     } catch(err) {
@@ -552,6 +551,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
   const [newLocation, setNewLocation] = useState("");
   const [saving, setSaving] = useState(false);
   const moveTimer = useRef(null);
+  const dragItem = useRef(null);
+  const dragOver = useRef(null);
 
   const { isOpen, openInfo, noticeText, successNote, pickupSlots, pickupLocations } = settings;
 
@@ -664,8 +665,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                             const restoreGifts = (o.gifts || []).map(g => ({ name: g.name, qty: Number(g.qty), id: g.id || null }));
                             await apiPost({ action: "restoreStock", items: restoreItems, gifts: restoreGifts });
                             const [pRes, gRes, sRes] = await Promise.all([apiGet("getProducts"), apiGet("getGifts"), apiGet("getSettings")]);
-                            if (pRes.success) setProducts(pRes.products);
-                            if (gRes.success) setGifts(gRes.gifts);
+                            if (pRes.success) setProducts(prev => prev.map(p => { const f = pRes.products.find(x => x.id === p.id); return f ? {...p, stock: f.stock} : p; }));
+                            if (gRes.success) setGifts(prev => prev.map(g => { const f = gRes.gifts.find(x => x.id === g.id); return f ? {...g, stock: f.stock} : g; }));
                             if (sRes.success && sRes.settings) { const s2 = sRes.settings; if (s2.stockGroups) s2.stockGroups = s2.stockGroups.map(g => ({...g, id: Number(g.id), stock: Number(g.stock)})); setSettings(prev => ({...prev, ...s2})); }
                           } catch(e) { alert("補回庫存失敗：" + e.message); }
                         }
@@ -676,8 +677,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                             const deductGifts = (o.gifts || []).map(g => ({ name: g.name, qty: Number(g.qty), id: g.id || null }));
                             await apiPost({ action: "deductStock", items: deductItems, gifts: deductGifts });
                             const [pRes, gRes, sRes] = await Promise.all([apiGet("getProducts"), apiGet("getGifts"), apiGet("getSettings")]);
-                            if (pRes.success) setProducts(pRes.products);
-                            if (gRes.success) setGifts(gRes.gifts);
+                            if (pRes.success) setProducts(prev => prev.map(p => { const f = pRes.products.find(x => x.id === p.id); return f ? {...p, stock: f.stock} : p; }));
+                            if (gRes.success) setGifts(prev => prev.map(g => { const f = gRes.gifts.find(x => x.id === g.id); return f ? {...g, stock: f.stock} : g; }));
                             if (sRes.success && sRes.settings) { const s2 = sRes.settings; if (s2.stockGroups) s2.stockGroups = s2.stockGroups.map(g => ({...g, id: Number(g.id), stock: Number(g.stock)})); setSettings(prev => ({...prev, ...s2})); }
                           } catch(e) { alert("扣庫存失敗：" + e.message); }
                         }
@@ -782,9 +783,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
 
         {tab === "products" && (
           <>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
-              <button style={{ ...S.btnOutline, fontSize: "12px", padding: "6px 14px" }} onClick={() => save(() => onSaveProducts(products))}>💾 儲存排列順序</button>
-            </div>
+
             {products.map(p => (
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
@@ -820,10 +819,26 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   </div>
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginRight: "8px" }}>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i <= 0) return; const a = [...products]; [a[i-1], a[i]] = [a[i], a[i-1]]; setProducts(a); }}>▲</button>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: C.muted, lineHeight: 1, padding: "2px" }} onClick={() => { const i = products.findIndex(x => x.id === p.id); if (i >= products.length - 1) return; const a = [...products]; [a[i], a[i+1]] = [a[i+1], a[i]]; setProducts(a); }}>▼</button>
-                    </div>
+                    <div
+                      draggable
+                      onDragStart={() => { dragItem.current = products.findIndex(x => x.id === p.id); }}
+                      onDragEnter={() => { dragOver.current = products.findIndex(x => x.id === p.id); }}
+                      onDragEnd={() => {
+                        const from = dragItem.current;
+                        const to = dragOver.current;
+                        if (from === null || to === null || from === to) return;
+                        const a = [...products];
+                        const moved = a.splice(from, 1)[0];
+                        a.splice(to, 0, moved);
+                        setProducts(a);
+                        onSaveProducts(a);
+                        dragItem.current = null;
+                        dragOver.current = null;
+                      }}
+                      onDragOver={e => e.preventDefault()}
+                      style={{ cursor: "grab", padding: "4px 6px", color: C.muted, fontSize: "18px", userSelect: "none", marginRight: "4px" }}
+                      title="拖曳排序"
+                    >⠿</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type==="drink"?"🧋 飲品":"🍰 甜點"}</div>
                       <div style={{ fontSize: "15px", marginBottom: "2px" }}>{p.name}</div>
