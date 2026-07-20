@@ -819,26 +819,24 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                   </div>
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div
-                      draggable
-                      onDragStart={() => { dragItem.current = products.findIndex(x => x.id === p.id); }}
-                      onDragEnter={() => { dragOver.current = products.findIndex(x => x.id === p.id); }}
-                      onDragEnd={() => {
-                        const from = dragItem.current;
-                        const to = dragOver.current;
-                        if (from === null || to === null || from === to) return;
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginRight: "8px" }}>
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
+                        const i = products.findIndex(x => x.id === p.id);
+                        if (i <= 0) return;
                         const a = [...products];
-                        const moved = a.splice(from, 1)[0];
-                        a.splice(to, 0, moved);
+                        [a[i-1], a[i]] = [a[i], a[i-1]];
                         setProducts(a);
-                        onSaveProducts(a);
-                        dragItem.current = null;
-                        dragOver.current = null;
-                      }}
-                      onDragOver={e => e.preventDefault()}
-                      style={{ cursor: "grab", padding: "4px 6px", color: C.muted, fontSize: "18px", userSelect: "none", marginRight: "4px" }}
-                      title="拖曳排序"
-                    >⠿</div>
+                        await onSaveProducts(a);
+                      }}>▲</button>
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
+                        const i = products.findIndex(x => x.id === p.id);
+                        if (i >= products.length - 1) return;
+                        const a = [...products];
+                        [a[i], a[i+1]] = [a[i+1], a[i]];
+                        setProducts(a);
+                        await onSaveProducts(a);
+                      }}>▼</button>
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type==="drink"?"🧋 飲品":"🍰 甜點"}</div>
                       <div style={{ fontSize: "15px", marginBottom: "2px" }}>{p.name}</div>
