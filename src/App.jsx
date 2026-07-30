@@ -90,7 +90,7 @@ function ProductCard({ product, qty, onChange, settings }) {
     <div style={{ ...S.card, opacity: soldOut ? 0.55 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
         <div>
-          <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "3px" }}>{product.type === "drink" ? "🧋 飲品" : "🍰 甜點"}</div>
+          <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "3px" }}>{catLabel(product.type)}</div>
           <div style={{ fontSize: "16px", fontWeight: "500", marginBottom: "4px" }}>{product.name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ color: C.rose, fontSize: "15px", fontFamily: "sans-serif" }}>NT$ {product.price}</span>
@@ -183,8 +183,15 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const fileRef = useRef();
 
-  const desserts = products.filter(p => !p.type || p.type === "dessert");
-  const drinks = products.filter(p => p.type === "drink");
+  const CATEGORIES = [
+    ["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
+    ["ng_cake","🎂 NG蛋糕"],["bread","🍞 生吐司"],["drink","🧋 飲品"],
+    ["cake","🍰 常溫蛋糕"],["popular","🔥 人氣甜點"],
+  ];
+  const catLabel = (type) => (CATEGORIES.find(([v]) => v === type) || ["","🍰 常溫蛋糕"])[1];
+  const productsByCategory = CATEGORIES.map(([val, lbl]) => ({
+    val, lbl, items: products.filter(p => p.type === val)
+  })).filter(c => c.items.length > 0);
   const dessertQty = desserts.reduce((s, p) => s + (cart[p.id] || 0), 0);
   const drinkQty = drinks.reduce((s, p) => s + (cart[p.id] || 0), 0);
   const giftQty = Math.min(dessertQty, drinkQty);
@@ -358,20 +365,14 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
             🎁 同時購買甜點＋飲品，各幾項就送幾份贈品！
           </div>
         )}
-        {desserts.length > 0 && <>
-          <div style={{ marginBottom: "16px" }}>
-            <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, letterSpacing: "0.15em", marginBottom: "4px" }}>DESSERTS</div>
-            <div style={{ fontSize: "18px" }}>🍰 甜點</div>
+        {productsByCategory.map(({ val, lbl, items }) => (
+          <div key={val}>
+            <div style={{ marginBottom: "8px", marginTop: "16px" }}>
+              <div style={{ fontSize: "18px" }}>{lbl}</div>
+            </div>
+            {items.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} settings={settings} />)}
           </div>
-          {desserts.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} settings={settings} />)}
-        </>}
-        {drinks.length > 0 && <>
-          <div style={{ marginBottom: "16px", marginTop: "8px" }}>
-            <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, letterSpacing: "0.15em", marginBottom: "4px" }}>DRINKS</div>
-            <div style={{ fontSize: "18px" }}>🧋 飲品</div>
-          </div>
-          {drinks.map(p => <ProductCard key={p.id} product={p} qty={cart[p.id] || 0} onChange={qty => setCart(c => ({ ...c, [p.id]: qty }))} settings={settings} />)}
-        </>}
+        ))}
         {desserts.length === 0 && drinks.length === 0 && (
           <div style={{ ...S.card, textAlign: "center", padding: "40px", color: C.muted, fontFamily: "sans-serif" }}>本週品項尚未設定，請稍後再來 🌸</div>
         )}
@@ -542,7 +543,7 @@ function GroupsTab({ settings, setSettings, onSaveSettings, products, gifts }) {
 function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders, settings, setSettings, onSaveProducts, onSaveGifts, onSaveSettings }) {
   const [tab, setTab] = useState("orders");
   const [editProduct, setEditProduct] = useState(null);
-  const [newProduct, setNewProduct] = useState({ name: "", price: "", originalPrice: "", stock: "", unit: "個", type: "dessert" });
+  const [newProduct, setNewProduct] = useState({ name: "", price: "", originalPrice: "", stock: "", unit: "個", type: "popular" });
   const [showNewProd, setShowNewProd] = useState(false);
   const [editGift, setEditGift] = useState(null);
   const [newGift, setNewGift] = useState({ name: "", desc: "", stock: "" });
@@ -553,6 +554,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
   const moveTimer = useRef(null);
   const dragItem = useRef(null);
   const dragOver = useRef(null);
+  const productsRef = useRef(products);
+  useEffect(() => { productsRef.current = products; }, [products]);
 
   const { isOpen, openInfo, noticeText, successNote, pickupSlots, pickupLocations } = settings;
 
@@ -574,12 +577,18 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
     const a = document.createElement("a"); a.href=url; a.download=`莉薇塔訂單_${new Date().toLocaleDateString("zh-TW")}.csv`; a.click(); URL.revokeObjectURL(url);
   }
 
+  const CATEGORIES = [
+    ["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
+    ["ng_cake","🎂 NG蛋糕"],["bread","🍞 生吐司"],["drink","🧋 飲品"],
+    ["cake","🍰 常溫蛋糕"],["popular","🔥 人氣甜點"],
+  ];
+  const catLabel = (type) => (CATEGORIES.find(([v]) => v === type) || ["","🍰 常溫蛋糕"])[1];
   const typeToggle = (obj, setObj) => (
-    <div style={{ marginBottom: "12px" }}>
-      <label style={S.label}>類型</label>
-      <div style={{ display: "flex", gap: "8px" }}>
-        {[["dessert","🍰 甜點"],["drink","🧋 飲品"]].map(([val,lbl]) => (
-          <button key={val} onClick={() => setObj(v=>({...v,type:val}))} style={{ flex:1, padding:"8px", border:`1px solid ${obj.type===val?C.rose:C.border}`, borderRadius:"4px", background:obj.type===val?C.rosePale:"transparent", fontFamily:"sans-serif", fontSize:"13px", cursor:"pointer", color:obj.type===val?C.rose:C.muted }}>{lbl}</button>
+    <div style={{ marginBottom: "10px" }}>
+      <label style={S.label}>分類</label>
+      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+        {CATEGORIES.map(([val,lbl]) => (
+          <button key={val} onClick={() => setObj(v => ({...v, type: val}))} style={{ padding: "5px 10px", border: `1px solid ${obj.type===val?C.rose:C.border}`, borderRadius: "20px", background: obj.type===val?C.rosePale:"transparent", color: obj.type===val?C.rose:C.muted, fontFamily: "sans-serif", fontSize: "11px", cursor: "pointer" }}>{lbl}</button>
         ))}
       </div>
     </div>
@@ -790,6 +799,9 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         {tab === "products" && (
           <>
 
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", gap: "8px" }}>
+              <button style={{ ...S.btnRose, fontSize: "12px", padding: "6px 14px" }} onClick={() => save(() => onSaveProducts(productsRef.current))}>✅ 完成排序・儲存</button>
+            </div>
             {products.map(p => (
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
@@ -826,25 +838,23 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginRight: "8px" }}>
-                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
-                        const i = products.findIndex(x => x.id === p.id);
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={() => {
+                        const i = productsRef.current.findIndex(x => x.id === p.id);
                         if (i <= 0) return;
-                        const a = [...products];
+                        const a = [...productsRef.current];
                         [a[i-1], a[i]] = [a[i], a[i-1]];
                         setProducts(a);
-                        await onSaveProducts(a);
                       }}>▲</button>
-                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
-                        const i = products.findIndex(x => x.id === p.id);
-                        if (i >= products.length - 1) return;
-                        const a = [...products];
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={() => {
+                        const i = productsRef.current.findIndex(x => x.id === p.id);
+                        if (i >= productsRef.current.length - 1) return;
+                        const a = [...productsRef.current];
                         [a[i], a[i+1]] = [a[i+1], a[i]];
                         setProducts(a);
-                        await onSaveProducts(a);
                       }}>▼</button>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{p.type==="drink"?"🧋 飲品":"🍰 甜點"}</div>
+                      <div style={{ fontSize: "11px", fontFamily: "sans-serif", color: C.muted, marginBottom: "2px" }}>{catLabel(p.type)}</div>
                       <div style={{ fontSize: "15px", marginBottom: "2px" }}>{p.name}</div>
                       <div style={{ fontFamily: "sans-serif", fontSize: "13px", color: C.muted }}>
                         <span style={{ color: C.rose }}>NT$ {p.price}</span>
@@ -876,7 +886,7 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                     save(async () => {
                       const newProds = [...products, { ...newProduct, id: Date.now(), price: Number(newProduct.price), originalPrice: newProduct.originalPrice?Number(newProduct.originalPrice):null, stock: Number(newProduct.stock) }];
                       setProducts(newProds); await onSaveProducts(newProds);
-                      setNewProduct({ name:"",price:"",originalPrice:"",stock:"",unit:"個",type:"dessert" }); setShowNewProd(false);
+                      setNewProduct({ name:"",price:"",originalPrice:"",stock:"",unit:"個",type:"popular" }); setShowNewProd(false);
                     });
                   }}>新增</button>
                   <button style={S.btnOutline} onClick={() => setShowNewProd(false)}>取消</button>
