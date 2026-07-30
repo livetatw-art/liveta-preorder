@@ -184,9 +184,9 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
   const fileRef = useRef();
 
   const CATEGORIES = [
-    ["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
+    ["new","✨ 新品"],["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
     ["ng_cake","🎂 NG蛋糕"],["bread","🍞 生吐司"],["drink","🧋 飲品"],
-    ["cake","🍰 常溫蛋糕"],["popular","🔥 人氣甜點"],
+    ["cake","🍰 常溫蛋糕"],["basque","🧁 巴斯克"],["popular","🔥 人氣甜點"],
   ];
   const catLabel = (type) => (CATEGORIES.find(([v]) => v === type) || ["","🍰 常溫蛋糕"])[1];
   const productsByCategory = CATEGORIES.map(([val, lbl]) => ({
@@ -580,9 +580,9 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
   }
 
   const CATEGORIES = [
-    ["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
+    ["new","✨ 新品"],["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
     ["ng_cake","🎂 NG蛋糕"],["bread","🍞 生吐司"],["drink","🧋 飲品"],
-    ["cake","🍰 常溫蛋糕"],["popular","🔥 人氣甜點"],
+    ["cake","🍰 常溫蛋糕"],["basque","🧁 巴斯克"],["popular","🔥 人氣甜點"],
   ];
   const catLabel = (type) => (CATEGORIES.find(([v]) => v === type) || ["","🍰 常溫蛋糕"])[1];
   const typeToggle = (obj, setObj) => (
