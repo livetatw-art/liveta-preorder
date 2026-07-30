@@ -553,6 +553,8 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
   const moveTimer = useRef(null);
   const dragItem = useRef(null);
   const dragOver = useRef(null);
+  const productsRef = useRef(products);
+  useEffect(() => { productsRef.current = products; }, [products]);
 
   const { isOpen, openInfo, noticeText, successNote, pickupSlots, pickupLocations } = settings;
 
@@ -790,6 +792,9 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         {tab === "products" && (
           <>
 
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", gap: "8px" }}>
+              <button style={{ ...S.btnRose, fontSize: "12px", padding: "6px 14px" }} onClick={() => save(() => onSaveProducts(productsRef.current))}>✅ 完成排序・儲存</button>
+            </div>
             {products.map(p => (
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
@@ -826,23 +831,19 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginRight: "8px" }}>
-                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: saving?"not-allowed":"pointer", fontSize: "14px", color: saving?C.border:C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
-                        if (saving) return;
-                        const i = products.findIndex(x => x.id === p.id);
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={() => {
+                        const i = productsRef.current.findIndex(x => x.id === p.id);
                         if (i <= 0) return;
-                        const a = [...products];
+                        const a = [...productsRef.current];
                         [a[i-1], a[i]] = [a[i], a[i-1]];
                         setProducts(a);
-                        await save(() => onSaveProducts(a));
                       }}>▲</button>
-                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: saving?"not-allowed":"pointer", fontSize: "14px", color: saving?C.border:C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
-                        if (saving) return;
-                        const i = products.findIndex(x => x.id === p.id);
-                        if (i >= products.length - 1) return;
-                        const a = [...products];
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={() => {
+                        const i = productsRef.current.findIndex(x => x.id === p.id);
+                        if (i >= productsRef.current.length - 1) return;
+                        const a = [...productsRef.current];
                         [a[i], a[i+1]] = [a[i+1], a[i]];
                         setProducts(a);
-                        await save(() => onSaveProducts(a));
                       }}>▼</button>
                     </div>
                     <div style={{ flex: 1 }}>
