@@ -82,6 +82,13 @@ function Header() {
 }
 
 // ── ProductCard ─────────────────────────────────────────────
+const CATEGORY_LIST = [
+  ["new","✨ 新品"],["jewel","💎 珠寶盒"],["swiss_roll","🌀 生乳捲"],["pudding","🍮 奶凍/布丁"],
+  ["ng_cake","🎂 NG蛋糕"],["bread","🍞 生吐司"],["drink","🧋 飲品"],
+  ["cake","🍰 常溫蛋糕"],["basque","🧁 巴斯克"],["popular","🔥 人氣甜點"],
+];
+const catLabel = (type) => (CATEGORY_LIST.find(([v]) => v === type) || ["","🍰 常溫蛋糕"])[1];
+
 function ProductCard({ product, qty, onChange, settings }) {
   const effectiveStock = getEffectiveStock(product, settings?.stockGroups);
   const soldOut = effectiveStock <= 0;
@@ -192,7 +199,7 @@ function OrderPage({ products, gifts, settings, onSubmit, onSaveSettings }) {
   const productsByCategory = CATEGORIES.map(([val, lbl]) => ({
     val, lbl, items: products.filter(p => p.type === val)
   })).filter(c => c.items.length > 0);
-  const desserts = products.filter(p => !p.type || p.type === "dessert" || !["jewel","swiss_roll","pudding","ng_cake","bread","drink","cake","popular"].includes(p.type));
+  const desserts = products.filter(p => !p.type || p.type === "dessert" || !["new","jewel","swiss_roll","pudding","ng_cake","bread","drink","cake","basque","popular"].includes(p.type));
   const drinks = products.filter(p => p.type === "drink");
   const dessertQty = desserts.reduce((s, p) => s + (cart[p.id] || 0), 0);
   const drinkQty = drinks.reduce((s, p) => s + (cart[p.id] || 0), 0);
