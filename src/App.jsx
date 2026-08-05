@@ -808,9 +808,6 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
         {tab === "products" && (
           <>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", gap: "8px" }}>
-              <button style={{ ...S.btnRose, fontSize: "12px", padding: "6px 14px" }} onClick={() => save(() => onSaveProducts(productsRef.current))}>✅ 完成排序・儲存</button>
-            </div>
             {products.map(p => (
               <div key={p.id} style={S.card}>
                 {editProduct?.id === p.id ? (
@@ -847,19 +844,26 @@ function AdminPanel({ products, setProducts, gifts, setGifts, orders, setOrders,
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginRight: "8px" }}>
-                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={() => {
-                        const i = productsRef.current.findIndex(x => x.id === p.id);
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
+                        const a = [...productsRef.current];
+                        const i = a.findIndex(x => x.id === p.id);
                         if (i <= 0) return;
-                        const a = [...productsRef.current];
-                        [a[i-1], a[i]] = [a[i], a[i-1]];
-                        setProducts(a);
+                        // 交換 sortOrder
+                        const newA = a.map((item, idx) => ({ ...item, sortOrder: idx }));
+                        [newA[i-1].sortOrder, newA[i].sortOrder] = [newA[i].sortOrder, newA[i-1].sortOrder];
+                        newA.sort((a, b) => a.sortOrder - b.sortOrder);
+                        setProducts(newA);
+                        await onSaveProducts(newA);
                       }}>▲</button>
-                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={() => {
-                        const i = productsRef.current.findIndex(x => x.id === p.id);
-                        if (i >= productsRef.current.length - 1) return;
+                      <button style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: "4px", cursor: "pointer", fontSize: "14px", color: C.muted, padding: "2px 6px", lineHeight: 1 }} onClick={async () => {
                         const a = [...productsRef.current];
-                        [a[i], a[i+1]] = [a[i+1], a[i]];
-                        setProducts(a);
+                        const i = a.findIndex(x => x.id === p.id);
+                        if (i >= a.length - 1) return;
+                        const newA = a.map((item, idx) => ({ ...item, sortOrder: idx }));
+                        [newA[i].sortOrder, newA[i+1].sortOrder] = [newA[i+1].sortOrder, newA[i].sortOrder];
+                        newA.sort((a, b) => a.sortOrder - b.sortOrder);
+                        setProducts(newA);
+                        await onSaveProducts(newA);
                       }}>▼</button>
                     </div>
                     <div style={{ flex: 1 }}>
